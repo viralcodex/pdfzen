@@ -1,5 +1,5 @@
-import { PDFDocument } from 'pdf-lib';
-import fs from 'fs/promises';
+import { PDFDocument } from "pdf-lib";
+import fs from "fs/promises";
 
 export interface MergePDFsInput {
   inputPaths: string[];
@@ -23,7 +23,7 @@ export async function mergePDFs(input: MergePDFsInput): Promise<MergePDFsOutput>
     if (input.inputPaths.length < 2) {
       return {
         success: false,
-        error: 'At least 2 PDF files are required for merging'
+        error: "At least 2 PDF files are required for merging",
       };
     }
 
@@ -36,7 +36,7 @@ export async function mergePDFs(input: MergePDFsInput): Promise<MergePDFsOutput>
       const pdfBytes = await fs.readFile(pdfPath);
       const pdf = await PDFDocument.load(pdfBytes);
       const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-      
+
       copiedPages.forEach((page) => {
         mergedPdf.addPage(page);
         totalPages++;
@@ -50,12 +50,12 @@ export async function mergePDFs(input: MergePDFsInput): Promise<MergePDFsOutput>
     return {
       success: true,
       outputPath: input.outputPath,
-      pageCount: totalPages
+      pageCount: totalPages,
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }

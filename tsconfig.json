@@ -8,6 +8,7 @@
     "jsx": "preserve",
     "jsxImportSource": "@opentui/solid",
     "allowJs": true,
+    "types": ["node"],
 
     // Bundler mode
     "moduleResolution": "bundler",
