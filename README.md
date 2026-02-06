@@ -1,6 +1,9 @@
-# PDFZen
+<img width="1408" height="600" alt="image" src="https://github.com/user-attachments/assets/7f9d7b7c-756a-493f-83ea-6c6025335714" />
 
-A terminal-based PDF utility tool for merging, splitting, compressing, and rotating PDFs.
+<p align="center">
+  <em>A terminal-based PDF utility tool for merging, splitting, compressing, and rotating PDFs.</em>
+</p>
+
 
 ## Installation
 
