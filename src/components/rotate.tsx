@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show } from "solid-js";
+import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
 import { rotatePDF } from "../tools/rotate";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import {
@@ -14,6 +14,7 @@ import {
   TextInput,
 } from "./ui";
 import { useFileList } from "../hooks/useFileList";
+import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
 
 type Rotation = 90 | 180 | 270;
@@ -21,12 +22,15 @@ type PageMode = "all" | "specific";
 
 export function RotateUI() {
   const fl = useFileList({ trackPageCount: true });
+  const nav = useKeyboardNav();
   const [rotation, setRotation] = createSignal<Rotation>(90);
   const [pageMode, setPageMode] = createSignal<PageMode>("all");
   const [pagesInput, setPagesInput] = createSignal("");
-  const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
+  const [inputFocused, setInputFocused] = createSignal(false);
 
   const canRotate = createMemo(() => fl.selectedFile() !== null && !fl.isProcessing());
+  const canAddFile = () => fl.inputPath().trim().length > 0;
+  const canClearAll = () => fl.fileCount() > 0;
 
   const clearAll = () => {
     fl.clearAll();
@@ -77,8 +81,97 @@ export function RotateUI() {
     }
   };
 
-  const focus = (name: string) => () => setFocusedInput(name);
-  const isFocused = (name: string) => focusedInput() === name;
+  // Register keyboard navigation elements
+  createEffect(() => {
+    nav.clearElements();
+    
+    // Register file list items and remove buttons
+    fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+      
+      // Remove button
+      nav.registerElement({
+        id: `file-${index}-remove`,
+        type: "button",
+        onEnter: () => fl.removeFile(index),
+      });
+    });
+
+    // Register rotation toggles
+    [90, 180, 270].forEach((deg) => {
+      nav.registerElement({
+        id: `rotation-${deg}`,
+        type: "toggle",
+        onEnter: () => setRotation(deg as Rotation),
+      });
+    });
+
+    // Register page mode toggles
+    nav.registerElement({
+      id: "pagemode-all",
+      type: "toggle",
+      onEnter: () => setPageMode("all"),
+    });
+    nav.registerElement({
+      id: "pagemode-specific",
+      type: "toggle",
+      onEnter: () => setPageMode("specific"),
+    });
+
+    // Register specific pages input if in specific mode
+    if (pageMode() === "specific") {
+      nav.registerElement({ id: "input-pages", type: "input" });
+    }
+
+    // Register path input
+    nav.registerElement({
+      id: "path-input",
+      type: "input",
+      onEnter: () => {
+        if (canAddFile()) fl.addFile();
+      },
+    });
+
+    // Register buttons
+    nav.registerElement({
+      id: "add-file-btn",
+      type: "button",
+      onEnter: () => fl.addFile(),
+      canFocus: () => canAddFile(),
+    });
+    nav.registerElement({
+      id: "clear-all-btn",
+      type: "button",
+      onEnter: () => clearAll(),
+      canFocus: () => canClearAll(),
+    });
+    nav.registerElement({
+      id: "rotate-btn",
+      type: "button",
+      onEnter: () => handleRotate(),
+      canFocus: () => canRotate(),
+    });
+    nav.registerElement({
+      id: "open-output-btn",
+      type: "button",
+      onEnter: () =>
+        openOutputFolder().catch((_) =>
+          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+        ),
+    });
+  });
+
+  createEffect(() => {
+    nav.setIsInputMode(inputFocused());
+  });
+
+  onCleanup(() => {
+    nav.clearElements();
+  });
 
   return (
     <ToolContainer>
@@ -88,6 +181,15 @@ export function RotateUI() {
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
         onRemove={fl.removeFile}
+        focusedIndex={() => {
+          const focusId = nav.getFocusedId();
+          if (focusId && focusId.startsWith("file-")) {
+            const parts = focusId.split("-");
+            return parseInt(parts[1] || "0");
+          }
+          return null;
+        }}
+        focusedButton={() => nav.getFocusedId()}
       />
 
       <Show when={fl.selectedFile()}>
@@ -97,8 +199,8 @@ export function RotateUI() {
           borderStyle="heavy"
           backgroundColor="#1a2f3a"
           paddingLeft={1}
-          paddingTop={0.5}
-          paddingBottom={0.5}
+          paddingTop={1}
+          paddingBottom={1}
           marginTop={1}
           flexShrink={0}
         >
@@ -116,24 +218,26 @@ export function RotateUI() {
 
       <Label text="Rotation" />
       <ToggleRow>
-        <Toggle label="90° →" value={90 as Rotation} selected={rotation()} onSelect={setRotation} />
-        <Toggle label="180°" value={180 as Rotation} selected={rotation()} onSelect={setRotation} />
+        <Toggle label="90° →" value={90 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-90")} />
+        <Toggle label="180°" value={180 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-180")} />
         <Toggle
           label="270° ←"
           value={270 as Rotation}
           selected={rotation()}
           onSelect={setRotation}
+          focused={nav.isFocused("rotation-270")}
         />
       </ToggleRow>
 
       <Label text="Apply to" />
       <ToggleRow>
-        <Toggle label="All Pages" value="all" selected={pageMode()} onSelect={setPageMode} />
+        <Toggle label="All Pages" value="all" selected={pageMode()} onSelect={setPageMode} focused={nav.isFocused("pagemode-all")} />
         <Toggle
           label="Specific Pages"
           value="specific"
           selected={pageMode()}
           onSelect={setPageMode}
+          focused={nav.isFocused("pagemode-specific")}
         />
       </ToggleRow>
 
@@ -143,8 +247,8 @@ export function RotateUI() {
           value={pagesInput}
           onInput={setPagesInput}
           placeholder="1, 2, 3"
-          focused={isFocused("pages")}
-          onFocus={focus("pages")}
+          focused={inputFocused() || nav.isFocused("input-pages")}
+          onFocus={() => setInputFocused(true)}
         />
       </Show>
 
@@ -152,25 +256,28 @@ export function RotateUI() {
         value={fl.inputPath}
         onInput={fl.setInputPath}
         onSubmit={fl.addFile}
-        focused={isFocused("path")}
-        onFocus={focus("path")}
+        focused={inputFocused() || nav.isFocused("path-input")}
+        onFocus={() => setInputFocused(true)}
       />
 
       <ButtonRow>
         <Button
           label="Add File"
-          color={fl.inputPath().trim() ? "green" : "gray"}
+          color={canAddFile() ? "green" : "gray"}
           onClick={fl.addFile}
+          focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
-          color={fl.fileCount() > 0 ? "yellow" : "gray"}
+          color={canClearAll() ? "yellow" : "gray"}
           onClick={clearAll}
+          focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Rotating..." : "Rotate"}
           color={canRotate() ? "cyan" : "gray"}
           onClick={handleRotate}
+          focused={nav.isFocused("rotate-btn")}
         />
         <Button
           label="Open Output"
@@ -180,6 +287,7 @@ export function RotateUI() {
               fl.setStatus({ msg: "Failed to open folder", type: "error" }),
             )
           }
+          focused={nav.isFocused("open-output-btn")}
         />
       </ButtonRow>
 

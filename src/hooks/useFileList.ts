@@ -130,7 +130,9 @@ export function useFileList(options: FileListOptions = {}) {
     setStatus({ msg: "Ready", type: "info" });
   };
 
-  usePaste((event) => addFileToList(event.text, true));
+  usePaste(async (event) => {
+    await addFileToList(event.text, true);
+  });
 
   return {
     // State (read)

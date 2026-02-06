@@ -1,14 +1,18 @@
-import { createSignal } from "solid-js";
+import { createSignal, createEffect, onCleanup } from "solid-js";
 import { mergePDFs } from "../tools/merge";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import { ToolContainer, Label, FileList, PathInput, ButtonRow, Button, StatusBar } from "./ui";
 import { useFileList } from "../hooks/useFileList";
+import { useKeyboardNav } from "../hooks/useKeyboardNav";
 
 export function MergeUI() {
   const fl = useFileList();
-  const [isFocused, setIsFocused] = createSignal(false);
+  const nav = useKeyboardNav();
+  const [inputFocused, setInputFocused] = createSignal(false);
 
   const canMerge = () => fl.fileCount() >= 2 && !fl.isProcessing();
+  const canAddFiles = () => fl.inputPath().trim().length > 0;
+  const canClearAll = () => fl.fileCount() > 0;
 
   const handleMerge = async () => {
     if (!canMerge()) return;
@@ -37,6 +41,86 @@ export function MergeUI() {
     }
   };
 
+  // Register keyboard navigation elements
+  createEffect(() => {
+    nav.clearElements();
+    
+    // Register file list items and their action buttons
+    fl.files().forEach((_, index) => {
+      // Move up button
+      nav.registerElement({
+        id: `file-${index}-up`,
+        type: "button",
+        onEnter: () => fl.moveFile(index, "up"),
+        canFocus: () => index > 0,
+      });
+      
+      // Move down button
+      nav.registerElement({
+        id: `file-${index}-down`,
+        type: "button",
+        onEnter: () => fl.moveFile(index, "down"),
+        canFocus: () => index < fl.fileCount() - 1,
+      });
+      
+      // Remove button
+      nav.registerElement({
+        id: `file-${index}-remove`,
+        type: "button",
+        onEnter: () => fl.removeFile(index),
+      });
+    });
+
+    // Register input
+    nav.registerElement({
+      id: "path-input",
+      type: "input",
+      onEnter: () => {
+        if (canAddFiles()) fl.addFile();
+      },
+    });
+
+    // Register buttons
+    nav.registerElement({
+      id: "add-files-btn",
+      type: "button",
+      onEnter: () => fl.addFile(),
+      canFocus: () => canAddFiles(),
+    });
+
+    nav.registerElement({
+      id: "clear-all-btn",
+      type: "button",
+      onEnter: () => fl.clearAll(),
+      canFocus: () => canClearAll(),
+    });
+
+    nav.registerElement({
+      id: "merge-btn",
+      type: "button",
+      onEnter: () => handleMerge(),
+      canFocus: () => canMerge(),
+    });
+
+    nav.registerElement({
+      id: "open-output-btn",
+      type: "button",
+      onEnter: () =>
+        openOutputFolder().catch((_) =>
+          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+        ),
+    });
+  });
+
+  // Track input focus mode
+  createEffect(() => {
+    nav.setIsInputMode(inputFocused());
+  });
+
+  onCleanup(() => {
+    nav.clearElements();
+  });
+
   return (
     <ToolContainer>
       <Label text="Files" count={fl.fileCount()} />
@@ -47,31 +131,43 @@ export function MergeUI() {
         onRemove={fl.removeFile}
         onMove={fl.moveFile}
         showReorder={true}
+        focusedIndex={() => {
+          const focusId = nav.getFocusedId();
+          if (focusId && focusId.startsWith("file-")) {
+            const parts = focusId.split("-");
+            return parseInt(parts[1] || "0");
+          }
+          return null;
+        }}
+        focusedButton={() => nav.getFocusedId()}
       />
 
       <PathInput
         value={fl.inputPath}
         onInput={fl.setInputPath}
         onSubmit={fl.addFile}
-        focused={isFocused()}
-        onFocus={() => setIsFocused(true)}
+        focused={inputFocused() || nav.isFocused("path-input")}
+        onFocus={() => setInputFocused(true)}
       />
 
       <ButtonRow>
         <Button
           label="Add Files"
-          color={fl.inputPath().trim() ? "#5bef4e" : "gray"}
+          color={canAddFiles() ? "#5bef4e" : "gray"}
           onClick={fl.addFile}
+          focused={nav.isFocused("add-files-btn")}
         />
         <Button
           label="Clear All"
-          color={fl.fileCount() > 0 ? "#f3ae40" : "gray"}
+          color={canClearAll() ? "#f3ae40" : "gray"}
           onClick={fl.clearAll}
+          focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Merging..." : "Merge"}
           color={canMerge() ? "cyan" : "gray"}
           onClick={handleMerge}
+          focused={nav.isFocused("merge-btn")}
         />
         <Button
           label="Open Output"
@@ -81,6 +177,7 @@ export function MergeUI() {
               fl.setStatus({ msg: "Failed to open folder", type: "error" }),
             )
           }
+          focused={nav.isFocused("open-output-btn")}
         />
       </ButtonRow>
 

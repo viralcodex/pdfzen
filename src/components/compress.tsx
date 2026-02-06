@@ -1,9 +1,10 @@
 import { TextAttributes } from "@opentui/core";
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { compressPDF, formatFileSize } from "../tools/compress";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import { ToolContainer, Label, FileList, PathInput, ButtonRow, Button, StatusBar } from "./ui";
 import { useFileList } from "../hooks/useFileList";
+import { useKeyboardNav } from "../hooks/useKeyboardNav";
 
 interface CompressionResult {
   originalSize: number;
@@ -14,8 +15,13 @@ interface CompressionResult {
 
 export function CompressUI() {
   const fl = useFileList();
-  const [focusedInput, setFocusedInput] = createSignal("path");
+  const nav = useKeyboardNav();
+  const [inputFocused, setInputFocused] = createSignal(false);
   const [result, setResult] = createSignal<CompressionResult | null>(null);
+
+  const canAddFile = () => fl.inputPath().trim().length > 0;
+  const canClearAll = () => fl.fileCount() > 0;
+  const canCompress = () => fl.selectedFile() && !fl.isProcessing();
 
   const clearAll = () => {
     fl.clearAll();
@@ -55,8 +61,75 @@ export function CompressUI() {
     }
   };
 
-  const focus = (name: string) => () => setFocusedInput(name);
-  const isFocused = (name: string) => focusedInput() === name;
+  // Register keyboard navigation elements
+  createEffect(() => {
+    nav.clearElements();
+    
+    // Register file list items and remove buttons
+    fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+      
+      // Remove button
+      nav.registerElement({
+        id: `file-${index}-remove`,
+        type: "button",
+        onEnter: () => fl.removeFile(index),
+      });
+    });
+
+    // Register input
+    nav.registerElement({
+      id: "path-input",
+      type: "input",
+      onEnter: () => {
+        if (canAddFile()) fl.addFile();
+      },
+    });
+
+    // Register buttons
+    nav.registerElement({
+      id: "add-file-btn",
+      type: "button",
+      onEnter: () => fl.addFile(),
+      canFocus: () => canAddFile(),
+    });
+
+    nav.registerElement({
+      id: "clear-all-btn",
+      type: "button",
+      onEnter: () => clearAll(),
+      canFocus: () => canClearAll(),
+    });
+
+    nav.registerElement({
+      id: "compress-btn",
+      type: "button",
+      onEnter: () => handleCompress(),
+      canFocus: () => canCompress(),
+    });
+
+    nav.registerElement({
+      id: "open-output-btn",
+      type: "button",
+      onEnter: () =>
+        openOutputFolder().catch((err) =>
+          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+        ),
+    });
+  });
+
+  // Track input focus mode
+  createEffect(() => {
+    nav.setIsInputMode(inputFocused());
+  });
+
+  onCleanup(() => {
+    nav.clearElements();
+  });
 
   return (
     <ToolContainer>
@@ -66,6 +139,15 @@ export function CompressUI() {
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
         onRemove={fl.removeFile}
+        focusedIndex={() => {
+          const focusId = nav.getFocusedId();
+          if (focusId && focusId.startsWith("file-")) {
+            const parts = focusId.split("-");
+            return parseInt(parts[1] || "0");
+          }
+          return null;
+        }}
+        focusedButton={() => nav.getFocusedId()}
       />
 
       <Show when={fl.selectedFile()}>
@@ -75,8 +157,8 @@ export function CompressUI() {
           borderStyle="heavy"
           backgroundColor="#1a2f3a"
           paddingLeft={1}
-          paddingTop={0.5}
-          paddingBottom={0.5}
+          paddingTop={1}
+          paddingBottom={1}
           marginTop={1}
           flexShrink={0}
         >
@@ -113,25 +195,28 @@ export function CompressUI() {
         value={fl.inputPath}
         onInput={fl.setInputPath}
         onSubmit={fl.addFile}
-        focused={isFocused("path")}
-        onFocus={focus("path")}
+        focused={inputFocused() || nav.isFocused("path-input")}
+        onFocus={() => setInputFocused(true)}
       />
 
       <ButtonRow>
         <Button
           label="Add File"
-          color={fl.inputPath().trim() ? "green" : "gray"}
+          color={canAddFile() ? "green" : "gray"}
           onClick={fl.addFile}
+          focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
-          color={fl.fileCount() > 0 ? "yellow" : "gray"}
+          color={canClearAll() ? "yellow" : "gray"}
           onClick={clearAll}
+          focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Compressing..." : "Compress"}
-          color={fl.selectedFile() && !fl.isProcessing() ? "cyan" : "gray"}
+          color={canCompress() ? "cyan" : "gray"}
           onClick={handleCompress}
+          focused={nav.isFocused("compress-btn")}
         />
         <Button
           label="Open Output"
@@ -141,6 +226,7 @@ export function CompressUI() {
               fl.setStatus({ msg: "Failed to open folder", type: "error" }),
             )
           }
+          focused={nav.isFocused("open-output-btn")}
         />
       </ButtonRow>
 

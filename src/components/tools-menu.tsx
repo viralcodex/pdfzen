@@ -2,12 +2,15 @@ import { useTerminalDimensions } from "@opentui/solid";
 import { EmptyBorderChars, toolsMenu } from "../constants/constants";
 import { TextAttributes } from "@opentui/core";
 import { chunkArray } from "../utils/utils";
+import { createEffect, onCleanup } from "solid-js";
+import { useKeyboardNav } from "../hooks/useKeyboardNav";
 
 export function ToolsMenu(props: {
   selectedTool: () => string | null;
   selectTool: (toolName: string) => void;
 }) {
   const { selectedTool, selectTool } = props;
+  const nav = useKeyboardNav();
   const terminalDimensions = useTerminalDimensions();
   const isCompact = () => terminalDimensions().width < 95;
   const columns = () => (isCompact() ? 2 : 4);
@@ -20,6 +23,22 @@ export function ToolsMenu(props: {
   };
 
   const rows = () => chunkArray(toolsMenu, isCompact() ? 2 : 4);
+
+  // Register all tool menu items
+  createEffect(() => {
+    nav.clearElements();
+    toolsMenu.forEach((tool) => {
+      nav.registerElement({
+        id: `tool-${tool.command}`,
+        type: "tool",
+        onEnter: () => selectTool(tool.command),
+      });
+    });
+  });
+
+  onCleanup(() => {
+    nav.clearElements();
+  });
 
   return (
     <box
@@ -38,6 +57,7 @@ export function ToolsMenu(props: {
         >
           {row.map((tool) => {
             const isSelected = () => selectedTool() === tool.command;
+            const isFocused = () => nav.isFocused(`tool-${tool.command}`);
             return (
               <box
                 alignItems="center"
@@ -49,16 +69,16 @@ export function ToolsMenu(props: {
                 width={buttonWidth()}
                 backgroundColor={"#2c3e50"}
                 border={["bottom"]}
-                borderColor={"#e74c3c"}
+                borderColor={isFocused() ? "#68ffc0" : "#e74c3c"}
                 borderStyle="heavy"
                 customBorderChars={{
                   ...EmptyBorderChars,
-                  horizontal: "▂",
+                  horizontal: isFocused() ? "▄" : "▂",
                 }}
               >
                 <text
-                  fg={isSelected() ? "#ffffff" : "#e2e8f0"}
-                  attributes={isSelected() ? TextAttributes.BOLD : undefined}
+                  fg={isFocused() ? "#32d692" : isSelected() ? "#ffffff" : "#e2e8f0"}
+                  attributes={isSelected() || isFocused() ? TextAttributes.BOLD : undefined}
                   content={String(tool.name)}
                 />
               </box>

@@ -63,6 +63,7 @@ interface ButtonProps {
   color: string;
   disabled?: boolean;
   onClick: () => void;
+  focused?: boolean;
 }
 
 export function Button(props: ButtonProps) {
@@ -92,7 +93,7 @@ export function Button(props: ButtonProps) {
       backgroundColor={getColor().bg}
       customBorderChars={{
         ...EmptyBorderChars,
-        horizontal: "▂",
+        horizontal: props.focused ? "▄" : "▂",
       }}
       height={1}
       paddingLeft={2}
@@ -117,6 +118,7 @@ interface ToggleProps<T> {
   value: T;
   selected: T;
   onSelect: (v: T) => void;
+  focused?: boolean;
 }
 
 export function Toggle<T>(props: ToggleProps<T>) {
@@ -125,11 +127,13 @@ export function Toggle<T>(props: ToggleProps<T>) {
     <box
       border={["bottom"]}
       borderStyle={isSelected() ? "heavy" : "single"}
-      borderColor={isSelected() ? "#3498db" : "#34495e"}
+      borderColor={
+        props.focused ? "#68ffc0" : isSelected() ? "#3498db" : "#34495e"
+      }
       backgroundColor={isSelected() ? "#1a2f3a" : "#1a1a1a"}
       customBorderChars={{
         ...EmptyBorderChars,
-        horizontal: "▂",
+        horizontal: props.focused ? "▄" : "▂",
       }}
       paddingLeft={2}
       paddingRight={2}
@@ -139,8 +143,10 @@ export function Toggle<T>(props: ToggleProps<T>) {
       onMouseDown={() => props.onSelect(props.value)}
     >
       <text
-        fg={isSelected() ? "#3498db" : "#7f8c8d"}
-        attributes={isSelected() ? TextAttributes.BOLD : undefined}
+        fg={props.focused ? "#68ffc0" : isSelected() ? "#3498db" : "#7f8c8d"}
+        attributes={
+          isSelected() || props.focused ? TextAttributes.BOLD : undefined
+        }
         content={props.label}
       />
     </box>
@@ -205,6 +211,8 @@ interface FileListProps {
   onMove?: (index: number, direction: "up" | "down") => void;
   emptyText?: string;
   showReorder?: boolean;
+  focusedIndex?: () => number | null;
+  focusedButton?: () => string | null;
 }
 
 export function FileList(props: FileListProps) {
@@ -249,42 +257,45 @@ export function FileList(props: FileListProps) {
           <Index each={props.files()}>
             {(file, index) => {
               const isSelected = () => props.selectedIndex() === index;
+              const isFocused = () => props.focusedIndex?.() === index;
               return (
                 <box
                   flexDirection="row"
                   alignItems="center"
                   padding={1}
                   marginBottom={1}
-                  backgroundColor={"#333333"}
+                  backgroundColor={isFocused() ? "#2a4a3a" : "#333333"}
                   onMouseDown={() => props.onSelect(index)}
                   columnGap={1}
+                  width="100%"
                   border={["left"]}
-                  borderColor={"#3498db"}
+                  borderColor={isFocused() ? "#68ffc0" : "#3498db"}
                   customBorderChars={{
                     ...EmptyBorderChars,
-                    vertical: "┃",
+                    vertical: isFocused() ? "▐" : "┃",
                   }}
                 >
                   <text
-                    fg={isSelected() ? "cyan" : "yellow"}
+                    fg={isFocused() ? "#68ffc0" : isSelected() ? "cyan" : "yellow"}
                     minWidth={3}
-                    content={isSelected() ? "▶" : `${index + 1}.`}
+                    content={`${index + 1}.`}
                   />
                   <text
-                    fg={"#ecf0f1"}
+                    fg={isFocused() ? "#ffffff" : "#ecf0f1"}
                     flexGrow={1}
                     flexShrink={1}
                     content={String(file())}
+                    attributes={isFocused() ? TextAttributes.BOLD : undefined}
                   />
-                  <box flexDirection="row" columnGap={1}>
+                  <box flexDirection="row" columnGap={1} flexShrink={0}>
                     <Show when={props.showReorder && props.onMove}>
                       <box
                         border={["bottom"]}
                         borderColor={index > 0 ? "#3498db" : "#34495e"}
-                        backgroundColor="#2c3e50"
+                        backgroundColor={props.focusedButton?.() === `file-${index}-up` ? "#1a4a3a" : "#2c3e50"}
                         customBorderChars={{
                           ...EmptyBorderChars,
-                          horizontal: "▂",
+                          horizontal: props.focusedButton?.() === `file-${index}-up` ? "▄" : "▂",
                         }}
                         onMouseDown={(e: any) => {
                           e.stopPropagation?.();
@@ -300,7 +311,8 @@ export function FileList(props: FileListProps) {
                         alignItems="center"
                       >
                         <text
-                          fg={index > 0 ? "#3498db" : "#7f8c8d"}
+                          fg={props.focusedButton?.() === `file-${index}-up` ? "#68ffc0" : index > 0 ? "#3498db" : "#7f8c8d"}
+                          attributes={props.focusedButton?.() === `file-${index}-up` ? TextAttributes.BOLD : undefined}
                           content={"↑"}
                         />
                       </box>
@@ -309,10 +321,10 @@ export function FileList(props: FileListProps) {
                         borderColor={
                           index < fileCount() - 1 ? "#3498db" : "#34495e"
                         }
-                        backgroundColor="#2c3e50"
+                        backgroundColor={props.focusedButton?.() === `file-${index}-down` ? "#1a4a3a" : "#2c3e50"}
                         customBorderChars={{
                           ...EmptyBorderChars,
-                          horizontal: "▂",
+                          horizontal: props.focusedButton?.() === `file-${index}-down` ? "▄" : "▂",
                         }}
                         onMouseDown={(e: any) => {
                           e.stopPropagation?.();
@@ -328,7 +340,8 @@ export function FileList(props: FileListProps) {
                         alignItems="center"
                       >
                         <text
-                          fg={index < fileCount() - 1 ? "#3498db" : "#7f8c8d"}
+                          fg={props.focusedButton?.() === `file-${index}-down` ? "#68ffc0" : index < fileCount() - 1 ? "#3498db" : "#7f8c8d"}
+                          attributes={props.focusedButton?.() === `file-${index}-down` ? TextAttributes.BOLD : undefined}
                           content={"↓"}
                         />
                       </box>
@@ -336,10 +349,10 @@ export function FileList(props: FileListProps) {
                     <box
                       border={["bottom"]}
                       borderColor="#e74c3c"
-                      backgroundColor="#3a1a1a"
+                      backgroundColor={props.focusedButton?.() === `file-${index}-remove` ? "#5a1a1a" : "#3a1a1a"}
                       customBorderChars={{
                         ...EmptyBorderChars,
-                        horizontal: "▂",
+                        horizontal: props.focusedButton?.() === `file-${index}-remove` ? "▄" : "▂",
                       }}
                       onMouseDown={(e: any) => {
                         e.stopPropagation?.();
@@ -355,7 +368,7 @@ export function FileList(props: FileListProps) {
                       alignItems="center"
                     >
                       <text
-                        fg="#e74c3c"
+                        fg={props.focusedButton?.() === `file-${index}-remove` ? "#ff6b6b" : "#e74c3c"}
                         attributes={TextAttributes.BOLD}
                         content={"X"}
                       />
@@ -378,10 +391,11 @@ interface PathInputProps {
   onSubmit: () => void;
   focused: boolean;
   onFocus: () => void;
+  onBlur?: () => void;
 }
 
 export function PathInput(props: PathInputProps) {
-  const borderColor = () => (props.focused ? "#3498db" : "#34495e");
+  const borderColor = () => (props.focused ? "#68ffc0" : "#34495e");
   return (
     <box
       flexDirection="column"
@@ -397,7 +411,7 @@ export function PathInput(props: PathInputProps) {
         borderColor={borderColor()}
         customBorderChars={{
           ...EmptyBorderChars,
-          vertical: "▌",
+          vertical: props.focused ? "▐" : "▌",
           bottomLeft: "╹",
         }}
         backgroundColor="#1a1a1a"
@@ -435,7 +449,7 @@ interface TextInputProps {
 }
 
 export function TextInput(props: TextInputProps) {
-  const borderColor = () => (props.focused ? "#3498db" : "#34495e");
+  const borderColor = () => (props.focused ? "#68ffc0" : "#34495e");
   return (
     <box
       flexDirection="column"
@@ -457,7 +471,7 @@ export function TextInput(props: TextInputProps) {
         borderColor={borderColor()}
         customBorderChars={{
           ...EmptyBorderChars,
-          vertical: "▌",
+          vertical: props.focused ? "▐" : "▌",
           horizontal: "▂",
         }}
         backgroundColor="#1a1a1a"
