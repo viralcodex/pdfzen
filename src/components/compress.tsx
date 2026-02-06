@@ -109,14 +109,14 @@ export function CompressUI() {
       id: "compress-btn",
       type: "button",
       onEnter: () => handleCompress(),
-      canFocus: () => canCompress(),
+      canFocus: () => !!canCompress(),
     });
 
     nav.registerElement({
       id: "open-output-btn",
       type: "button",
       onEnter: () =>
-        openOutputFolder().catch((err) =>
+        openOutputFolder().catch((_) =>
           fl.setStatus({ msg: "Failed to open folder", type: "error" })
         ),
     });
@@ -222,7 +222,7 @@ export function CompressUI() {
           label="Open Output"
           color="magenta"
           onClick={() =>
-            openOutputFolder().catch((err) =>
+            openOutputFolder().catch((_) =>
               fl.setStatus({ msg: "Failed to open folder", type: "error" }),
             )
           }
