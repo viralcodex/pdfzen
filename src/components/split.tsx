@@ -1,8 +1,9 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { useTerminalDimensions } from "@opentui/solid";
 import { splitPDF } from "../tools/split";
 import { getOutputDir, openOutputFolder } from "../utils/utils";
 import { useFileList } from "../hooks/useFileList";
+import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import {
   ToolContainer,
   Label,
@@ -21,16 +22,19 @@ type SplitMode = "splitAt" | "range" | "every";
 
 export function SplitUI() {
   const fl = useFileList({ trackPageCount: true });
+  const nav = useKeyboardNav();
   const [splitMode, setSplitMode] = createSignal<SplitMode>("splitAt");
   const [pagesInput, setPagesInput] = createSignal("");
   const [rangeStart, setRangeStart] = createSignal("");
   const [rangeEnd, setRangeEnd] = createSignal("");
   const [everyN, setEveryN] = createSignal("");
-  const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
+  const [inputFocused, setInputFocused] = createSignal(false);
   const terminalDimensions = useTerminalDimensions();
   const isCompact = () => terminalDimensions().height < 30 || terminalDimensions().width < 60;
 
   const canSplit = () => fl.selectedFile() !== null && !fl.isProcessing();
+  const canAddFile = () => fl.inputPath().trim().length > 0;
+  const canClearAll = () => fl.fileCount() > 0;
 
   const clearAll = () => {
     fl.clearAll();
@@ -98,8 +102,98 @@ export function SplitUI() {
     }
   };
 
-  const focus = (name: string) => () => setFocusedInput(name);
-  const isFocused = (name: string) => focusedInput() === name;
+  // Register keyboard navigation elements
+  createEffect(() => {
+    nav.clearElements();
+    
+    // Register file list items and remove buttons
+    fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+      
+      // Remove button
+      nav.registerElement({
+        id: `file-${index}-remove`,
+        type: "button",
+        onEnter: () => fl.removeFile(index),
+      });
+    });
+
+    // Register mode toggles
+    nav.registerElement({
+      id: "toggle-splitAt",
+      type: "toggle",
+      onEnter: () => setSplitMode("splitAt"),
+    });
+    nav.registerElement({
+      id: "toggle-range",
+      type: "toggle",
+      onEnter: () => setSplitMode("range"),
+    });
+    nav.registerElement({
+      id: "toggle-every",
+      type: "toggle",
+      onEnter: () => setSplitMode("every"),
+    });
+
+    // Register mode-specific inputs
+    if (splitMode() === "splitAt") {
+      nav.registerElement({ id: "input-splitAt", type: "input" });
+    } else if (splitMode() === "range") {
+      nav.registerElement({ id: "input-rangeStart", type: "input" });
+      nav.registerElement({ id: "input-rangeEnd", type: "input" });
+    } else if (splitMode() === "every") {
+      nav.registerElement({ id: "input-every", type: "input" });
+    }
+
+    // Register path input
+    nav.registerElement({
+      id: "path-input",
+      type: "input",
+      onEnter: () => {
+        if (canAddFile()) fl.addFile();
+      },
+    });
+
+    // Register buttons
+    nav.registerElement({
+      id: "add-file-btn",
+      type: "button",
+      onEnter: () => fl.addFile(),
+      canFocus: () => canAddFile(),
+    });
+    nav.registerElement({
+      id: "clear-all-btn",
+      type: "button",
+      onEnter: () => clearAll(),
+      canFocus: () => canClearAll(),
+    });
+    nav.registerElement({
+      id: "split-btn",
+      type: "button",
+      onEnter: () => handleSplit(),
+      canFocus: () => canSplit(),
+    });
+    nav.registerElement({
+      id: "open-output-btn",
+      type: "button",
+      onEnter: () =>
+        openOutputFolder().catch((_) =>
+          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+        ),
+    });
+  });
+
+  createEffect(() => {
+    nav.setIsInputMode(inputFocused());
+  });
+
+  onCleanup(() => {
+    nav.clearElements();
+  });
 
   return (
     <ToolContainer>
@@ -109,6 +203,15 @@ export function SplitUI() {
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
         onRemove={fl.removeFile}
+        focusedIndex={() => {
+          const focusId = nav.getFocusedId();
+          if (focusId && focusId.startsWith("file-")) {
+            const parts = focusId.split("-");
+            return parseInt(parts[1] || "0");
+          }
+          return null;
+        }}
+        focusedButton={() => nav.getFocusedId()}
       />
 
       <Show when={fl.selectedFile()}>
@@ -142,13 +245,15 @@ export function SplitUI() {
           value="splitAt"
           selected={splitMode()}
           onSelect={setSplitMode}
+          focused={nav.isFocused("toggle-splitAt")}
         />
-        <Toggle label="Range" value="range" selected={splitMode()} onSelect={setSplitMode} />
+        <Toggle label="Range" value="range" selected={splitMode()} onSelect={setSplitMode} focused={nav.isFocused("toggle-range")} />
         <Toggle
           label="Every N Pages"
           value="every"
           selected={splitMode()}
           onSelect={setSplitMode}
+          focused={nav.isFocused("toggle-every")}
         />
       </ToggleRow>
 
@@ -158,8 +263,8 @@ export function SplitUI() {
           value={pagesInput}
           onInput={setPagesInput}
           placeholder={fl.pageCount() > 1 ? `1-${fl.pageCount() - 1}` : "1"}
-          focused={isFocused("splitAt")}
-          onFocus={focus("splitAt")}
+          focused={inputFocused() || nav.isFocused("input-splitAt")}
+          onFocus={() => setInputFocused(true)}
         />
       </Show>
 
@@ -176,8 +281,8 @@ export function SplitUI() {
             value={rangeStart}
             onInput={setRangeStart}
             placeholder="1"
-            focused={isFocused("rangeStart")}
-            onFocus={focus("rangeStart")}
+            focused={inputFocused() || nav.isFocused("input-rangeStart")}
+            onFocus={() => setInputFocused(true)}
             flexGrow={1}
           />
           <TextInput
@@ -185,8 +290,8 @@ export function SplitUI() {
             value={rangeEnd}
             onInput={setRangeEnd}
             placeholder={String(fl.pageCount() || "")}
-            focused={isFocused("rangeEnd")}
-            onFocus={focus("rangeEnd")}
+            focused={inputFocused() || nav.isFocused("input-rangeEnd")}
+            onFocus={() => setInputFocused(true)}
             flexGrow={1}
           />
         </box>
@@ -198,8 +303,8 @@ export function SplitUI() {
           value={everyN}
           onInput={setEveryN}
           placeholder="2"
-          focused={isFocused("every")}
-          onFocus={focus("every")}
+          focused={inputFocused() || nav.isFocused("input-every")}
+          onFocus={() => setInputFocused(true)}
         />
       </Show>
 
@@ -207,25 +312,28 @@ export function SplitUI() {
         value={fl.inputPath}
         onInput={fl.setInputPath}
         onSubmit={fl.addFile}
-        focused={isFocused("path")}
-        onFocus={focus("path")}
+        focused={inputFocused() || nav.isFocused("path-input")}
+        onFocus={() => setInputFocused(true)}
       />
 
       <ButtonRow>
         <Button
           label="Add File"
-          color={fl.inputPath().trim() ? "green" : "gray"}
+          color={canAddFile() ? "green" : "gray"}
           onClick={fl.addFile}
+          focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
-          color={fl.fileCount() > 0 ? "yellow" : "gray"}
+          color={canClearAll() ? "yellow" : "gray"}
           onClick={clearAll}
+          focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Splitting..." : "Split"}
           color={canSplit() ? "cyan" : "gray"}
           onClick={handleSplit}
+          focused={nav.isFocused("split-btn")}
         />
         <Button
           label="Open Output"
@@ -235,6 +343,7 @@ export function SplitUI() {
               fl.setStatus({ msg: "Failed to open folder", type: "error" }),
             )
           }
+          focused={nav.isFocused("open-output-btn")}
         />
       </ButtonRow>
 
