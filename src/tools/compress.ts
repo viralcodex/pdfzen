@@ -1,10 +1,12 @@
-import { PDFDocument } from 'pdf-lib';
-import fs from 'fs/promises';
+import { PDFDocument } from "pdf-lib";
+import fs from "fs/promises";
 
 export interface CompressPDFInput {
   inputPath: string;
   outputPath: string;
-  quality?: 'low' | 'medium' | 'high'; // Compression level
+  // Note: pdf-lib doesn't support quality-based compression.
+  // This option is reserved for future use with external tools like Ghostscript.
+  quality?: "low" | "medium" | "high";
 }
 
 export interface CompressPDFOutput {
@@ -27,21 +29,21 @@ export async function compressPDF(input: CompressPDFInput): Promise<CompressPDFO
   try {
     const pdfBytes = await fs.readFile(input.inputPath);
     const originalSize = pdfBytes.length;
-    
+
     // Load the PDF
     const pdfDoc = await PDFDocument.load(pdfBytes);
-    
+
     // Save with optimization options
     // pdf-lib automatically removes unused objects when saving
     const compressedPdfBytes = await pdfDoc.save({
       useObjectStreams: true, // Use object streams for better compression
       addDefaultPage: false,
-      objectsPerTick: 50
+      objectsPerTick: 50,
     });
-    
+
     // Write compressed PDF
     await fs.writeFile(input.outputPath, compressedPdfBytes);
-    
+
     const compressedSize = compressedPdfBytes.length;
     const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(2);
 
@@ -50,12 +52,12 @@ export async function compressPDF(input: CompressPDFInput): Promise<CompressPDFO
       outputPath: input.outputPath,
       originalSize,
       compressedSize,
-      compressionRatio: `${ratio}%`
+      compressionRatio: `${ratio}%`,
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -66,14 +68,14 @@ export async function compressPDF(input: CompressPDFInput): Promise<CompressPDFO
  * @returns Formatted string (e.g., "1.5 MB")
  */
 export function formatFileSize(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB'];
+  const units = ["B", "KB", "MB", "GB"];
   let size = bytes;
   let unitIndex = 0;
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-  
+
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
