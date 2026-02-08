@@ -78,7 +78,11 @@ export function useKeyboardNav() {
     
     switch (event.name) {
       case "tab":
-        event.shift ? focusPrev() : focusNext();
+        if (event.shift) {
+          focusPrev();
+        } else {
+          focusNext();
+        }
         break;
       case "return":
         executeCurrentAction();
