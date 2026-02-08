@@ -3,9 +3,9 @@ import { useTerminalDimensions } from "@opentui/solid";
 import { Show, Index } from "solid-js";
 import type { JSX, Accessor, Setter } from "solid-js";
 import { EmptyBorderChars } from "../constants/constants";
+import type { StatusType } from "../model/models";
 
-// ============ Shared Types ============
-export type StatusType = "info" | "error" | "success";
+export type { StatusType };
 
 export const STATUS_COLORS: Record<StatusType, string> = {
   error: "red",
@@ -391,7 +391,6 @@ interface PathInputProps {
   onSubmit: () => void;
   focused: boolean;
   onFocus: () => void;
-  onBlur?: () => void;
 }
 
 export function PathInput(props: PathInputProps) {

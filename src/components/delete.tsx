@@ -1,5 +1,5 @@
 import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
-import { rotatePDF } from "../tools/rotate";
+import { deletePages } from "../tools/delete";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import {
   ToolContainer,
@@ -9,26 +9,30 @@ import {
   ButtonRow,
   Button,
   StatusBar,
-  ToggleRow,
-  Toggle,
   TextInput,
 } from "./ui";
 import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
 
-type Rotation = 90 | 180 | 270;
-type PageMode = "all" | "specific";
-
-export function RotateUI() {
+export function DeleteUI() {
   const fl = useFileList({ trackPageCount: true });
   const nav = useKeyboardNav();
-  const [rotation, setRotation] = createSignal<Rotation>(90);
-  const [pageMode, setPageMode] = createSignal<PageMode>("all");
   const [pagesInput, setPagesInput] = createSignal("");
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
 
-  const canRotate = createMemo(() => fl.selectedFile() !== null && !fl.isProcessing());
+  const parsePagesInput = () => {
+    return pagesInput()
+      .split(",")
+      .map((s) => parseInt(s.trim()))
+      .filter((n) => !isNaN(n) && n >= 1 && n <= fl.pageCount());
+  };
+
+  const canDelete = createMemo(() => {
+    const file = fl.selectedFile();
+    const pages = parsePagesInput();
+    return file !== null && pages.length > 0 && !fl.isProcessing();
+  });
   const canAddFile = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
 
@@ -37,34 +41,35 @@ export function RotateUI() {
     setPagesInput("");
   };
 
-  const handleRotate = async () => {
+  const handleDelete = async () => {
     const file = fl.selectedFile();
     if (!file || fl.isProcessing()) return;
 
+    const pages = parsePagesInput();
+    if (pages.length === 0) {
+      fl.setStatus({ msg: "Enter page numbers to delete", type: "error" });
+      return;
+    }
+
+    if (pages.length >= fl.pageCount()) {
+      fl.setStatus({ msg: "Cannot delete all pages", type: "error" });
+      return;
+    }
+
     fl.setIsProcessing(true);
-    fl.setStatus({ msg: "Rotating PDF...", type: "info" });
+    fl.setStatus({ msg: "Deleting pages...", type: "info" });
 
     try {
-      const outputPath = await getOutputPath("rotated", file);
-      let pages: number[] | "all" = "all";
-
-      if (pageMode() === "specific") {
-        pages = pagesInput()
-          .split(",")
-          .map((s) => parseInt(s.trim()))
-          .filter((n) => !isNaN(n));
-        if (pages.length === 0) {
-          fl.setStatus({ msg: "Enter page numbers (e.g., 1, 2, 3)", type: "error" });
-          fl.setIsProcessing(false);
-          return;
-        }
-      }
-
-      const res = await rotatePDF({ inputPath: file, outputPath, rotation: rotation(), pages });
+      const outputPath = await getOutputPath("deleted", file);
+      const res = await deletePages({
+        inputPath: file,
+        outputPath,
+        pagesToDelete: pages,
+      });
 
       if (res.success) {
         fl.setStatus({
-          msg: `Rotated ${res.rotatedPages} page(s) by ${rotation()}°`,
+          msg: `Deleted ${res.deletedPages} page(s), ${res.remainingPages} remaining`,
           type: "success",
         });
         openFile(outputPath);
@@ -84,7 +89,7 @@ export function RotateUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
+
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
@@ -92,8 +97,7 @@ export function RotateUI() {
         type: "list-item",
         onEnter: () => fl.selectFile(index),
       });
-      
-      // Remove button
+
       nav.registerElement({
         id: `file-${index}-remove`,
         type: "button",
@@ -101,31 +105,8 @@ export function RotateUI() {
       });
     });
 
-    // Register rotation toggles
-    [90, 180, 270].forEach((deg) => {
-      nav.registerElement({
-        id: `rotation-${deg}`,
-        type: "toggle",
-        onEnter: () => setRotation(deg as Rotation),
-      });
-    });
-
-    // Register page mode toggles
-    nav.registerElement({
-      id: "pagemode-all",
-      type: "toggle",
-      onEnter: () => setPageMode("all"),
-    });
-    nav.registerElement({
-      id: "pagemode-specific",
-      type: "toggle",
-      onEnter: () => setPageMode("specific"),
-    });
-
-    // Register specific pages input if in specific mode
-    if (pageMode() === "specific") {
-      nav.registerElement({ id: "input-pages", type: "input" });
-    }
+    // Register pages input
+    nav.registerElement({ id: "input-pages", type: "input" });
 
     // Register path input
     nav.registerElement({
@@ -150,10 +131,10 @@ export function RotateUI() {
       canFocus: () => canClearAll(),
     });
     nav.registerElement({
-      id: "rotate-btn",
+      id: "delete-btn",
       type: "button",
-      onEnter: () => handleRotate(),
-      canFocus: () => canRotate(),
+      onEnter: () => handleDelete(),
+      canFocus: () => canDelete(),
     });
     nav.registerElement({
       id: "open-output-btn",
@@ -223,41 +204,14 @@ export function RotateUI() {
         </box>
       </Show>
 
-      <Label text="Rotation" />
-      <ToggleRow>
-        <Toggle label="90° →" value={90 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-90")} />
-        <Toggle label="180°" value={180 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-180")} />
-        <Toggle
-          label="270° ←"
-          value={270 as Rotation}
-          selected={rotation()}
-          onSelect={setRotation}
-          focused={nav.isFocused("rotation-270")}
-        />
-      </ToggleRow>
-
-      <Label text="Apply to" />
-      <ToggleRow>
-        <Toggle label="All Pages" value="all" selected={pageMode()} onSelect={setPageMode} focused={nav.isFocused("pagemode-all")} />
-        <Toggle
-          label="Specific Pages"
-          value="specific"
-          selected={pageMode()}
-          onSelect={setPageMode}
-          focused={nav.isFocused("pagemode-specific")}
-        />
-      </ToggleRow>
-
-      <Show when={pageMode() === "specific"}>
-        <TextInput
-          label="Pages (comma-separated, e.g., 1, 2, 3):"
-          value={pagesInput}
-          onInput={setPagesInput}
-          placeholder="1, 2, 3"
-          focused={focusedInput() === "input-pages" || nav.isFocused("input-pages")}
-          onFocus={() => setFocusedInput("input-pages")}
-        />
-      </Show>
+      <TextInput
+        label="Pages to delete (comma-separated, e.g., 1, 3, 5):"
+        value={pagesInput}
+        onInput={setPagesInput}
+        placeholder="1, 3, 5"
+        focused={focusedInput() === "input-pages" || nav.isFocused("input-pages")}
+        onFocus={() => setFocusedInput("input-pages")}
+      />
 
       <PathInput
         value={fl.inputPath}
@@ -281,10 +235,10 @@ export function RotateUI() {
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
-          label={fl.isProcessing() ? "Rotating..." : "Rotate"}
-          color={canRotate() ? "cyan" : "gray"}
-          onClick={handleRotate}
-          focused={nav.isFocused("rotate-btn")}
+          label={fl.isProcessing() ? "Deleting..." : "Delete Pages"}
+          color={canDelete() ? "red" : "gray"}
+          onClick={handleDelete}
+          focused={nav.isFocused("delete-btn")}
         />
         <Button
           label="Open Output"

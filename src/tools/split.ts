@@ -1,23 +1,9 @@
 import { PDFDocument } from "pdf-lib";
 import fs from "fs/promises";
 import path from "path";
+import type { SplitPDFInput, SplitPDFOutput } from "../model/models";
 
-export interface SplitPDFInput {
-  inputPath: string;
-  outputDir: string;
-  splitMode: "splitAt" | "range" | "every";
-  // For 'splitAt' mode: 3 - split into pages 1-3 and pages 4-end
-  // For 'range' mode: [1, 5] - extract pages 1-5
-  // For 'every' mode: 2 - split every 2 pages
-  splitValue: number | number[];
-}
-
-export interface SplitPDFOutput {
-  success: boolean;
-  outputFiles?: string[];
-  error?: string;
-  totalFiles?: number;
-}
+export type { SplitPDFInput, SplitPDFOutput };
 
 /**
  * Splits a PDF file into multiple files based on the specified mode

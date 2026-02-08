@@ -1,35 +1,55 @@
 import { createSignal, createEffect, onCleanup } from "solid-js";
-import { mergePDFs } from "../tools/merge";
+import { imagesToPDF } from "../tools/images-to-pdf";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
-import { ToolContainer, Label, FileList, PathInput, ButtonRow, Button, StatusBar } from "./ui";
+import {
+  ToolContainer,
+  Label,
+  FileList,
+  PathInput,
+  ButtonRow,
+  Button,
+  StatusBar,
+  ToggleRow,
+  Toggle,
+} from "./ui";
 import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 
-export function MergeUI() {
-  const fl = useFileList();
+type PageSize = "fit" | "a4" | "letter";
+
+export function ImagesToPDFUI() {
+  const fl = useFileList({ acceptImages: true });
   const nav = useKeyboardNav();
+  const [pageSize, setPageSize] = createSignal<PageSize>("fit");
   const [inputFocused, setInputFocused] = createSignal(false);
 
-  const canMerge = () => fl.fileCount() >= 2 && !fl.isProcessing();
+  const canConvert = () => fl.fileCount() >= 1 && !fl.isProcessing();
   const canAddFiles = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
 
-  const handleMerge = async () => {
-    if (!canMerge()) return;
+  const handleConvert = async () => {
+    if (!canConvert()) return;
 
     fl.setIsProcessing(true);
-    fl.setStatus({ msg: "Merging PDFs...", type: "info" });
+    fl.setStatus({ msg: "Converting images to PDF...", type: "info" });
 
     try {
-      const outputPath = await getOutputPath("merged");
-      const result = await mergePDFs({ inputPaths: fl.files(), outputPath });
+      const outputPath = await getOutputPath("images");
+      const res = await imagesToPDF({
+        inputPaths: fl.files(),
+        outputPath,
+        pageSize: pageSize(),
+      });
 
-      if (result.success) {
-        fl.setStatus({ msg: `Merged ${result.pageCount} pages`, type: "success" });
+      if (res.success) {
+        fl.setStatus({
+          msg: `Created PDF with ${res.totalPages} page(s)`,
+          type: "success",
+        });
         fl.clearAll();
         openFile(outputPath);
       } else {
-        fl.setStatus({ msg: result.error || "Unknown error", type: "error" });
+        fl.setStatus({ msg: res.error || "Unknown error", type: "error" });
       }
     } catch (error) {
       fl.setStatus({
@@ -44,7 +64,6 @@ export function MergeUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
     // Register file list items and their action buttons
     fl.files().forEach((_, index) => {
       // Move up button
@@ -54,7 +73,7 @@ export function MergeUI() {
         onEnter: () => fl.moveFile(index, "up"),
         canFocus: () => index > 0,
       });
-      
+
       // Move down button
       nav.registerElement({
         id: `file-${index}-down`,
@@ -62,7 +81,7 @@ export function MergeUI() {
         onEnter: () => fl.moveFile(index, "down"),
         canFocus: () => index < fl.fileCount() - 1,
       });
-      
+
       // Remove button
       nav.registerElement({
         id: `file-${index}-remove`,
@@ -71,7 +90,24 @@ export function MergeUI() {
       });
     });
 
-    // Register input
+    // Register page size toggles
+    nav.registerElement({
+      id: "toggle-fit",
+      type: "toggle",
+      onEnter: () => setPageSize("fit"),
+    });
+    nav.registerElement({
+      id: "toggle-a4",
+      type: "toggle",
+      onEnter: () => setPageSize("a4"),
+    });
+    nav.registerElement({
+      id: "toggle-letter",
+      type: "toggle",
+      onEnter: () => setPageSize("letter"),
+    });
+
+    // Register path input
     nav.registerElement({
       id: "path-input",
       type: "input",
@@ -96,10 +132,10 @@ export function MergeUI() {
     });
 
     nav.registerElement({
-      id: "merge-btn",
+      id: "convert-btn",
       type: "button",
-      onEnter: () => handleMerge(),
-      canFocus: () => canMerge(),
+      onEnter: () => handleConvert(),
+      canFocus: () => canConvert(),
     });
 
     nav.registerElement({
@@ -130,7 +166,7 @@ export function MergeUI() {
 
   return (
     <ToolContainer>
-      <Label text="Files" count={fl.fileCount()} />
+      <Label text="Images" count={fl.fileCount()} />
       <FileList
         files={fl.files}
         selectedIndex={() => null}
@@ -149,6 +185,31 @@ export function MergeUI() {
         focusedButton={() => nav.getFocusedId()}
       />
 
+      <Label text="Page Size" />
+      <ToggleRow>
+        <Toggle
+          label="Fit to Image"
+          value="fit"
+          selected={pageSize()}
+          onSelect={setPageSize}
+          focused={nav.isFocused("toggle-fit")}
+        />
+        <Toggle
+          label="A4"
+          value="a4"
+          selected={pageSize()}
+          onSelect={setPageSize}
+          focused={nav.isFocused("toggle-a4")}
+        />
+        <Toggle
+          label="Letter"
+          value="letter"
+          selected={pageSize()}
+          onSelect={setPageSize}
+          focused={nav.isFocused("toggle-letter")}
+        />
+      </ToggleRow>
+
       <PathInput
         value={fl.inputPath}
         onInput={fl.setInputPath}
@@ -159,7 +220,7 @@ export function MergeUI() {
 
       <ButtonRow>
         <Button
-          label="Add Files"
+          label="Add Images"
           color={canAddFiles() ? "#5bef4e" : "gray"}
           onClick={fl.addFile}
           focused={nav.isFocused("add-files-btn")}
@@ -171,10 +232,10 @@ export function MergeUI() {
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
-          label={fl.isProcessing() ? "Merging..." : "Merge"}
-          color={canMerge() ? "cyan" : "gray"}
-          onClick={handleMerge}
-          focused={nav.isFocused("merge-btn")}
+          label={fl.isProcessing() ? "Converting..." : "Create PDF"}
+          color={canConvert() ? "cyan" : "gray"}
+          onClick={handleConvert}
+          focused={nav.isFocused("convert-btn")}
         />
         <Button
           label="Open Output"

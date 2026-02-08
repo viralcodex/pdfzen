@@ -1,17 +1,8 @@
 import { PDFDocument } from "pdf-lib";
 import fs from "fs/promises";
+import type { MergePDFsInput, MergePDFsOutput } from "../model/models";
 
-export interface MergePDFsInput {
-  inputPaths: string[];
-  outputPath: string;
-}
-
-export interface MergePDFsOutput {
-  success: boolean;
-  outputPath?: string;
-  error?: string;
-  pageCount?: number;
-}
+export type { MergePDFsInput, MergePDFsOutput };
 
 /**
  * Merges multiple PDF files into a single PDF

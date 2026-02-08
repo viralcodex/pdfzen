@@ -127,6 +127,13 @@ export function CompressUI() {
     nav.setIsInputMode(inputFocused());
   });
 
+  // Sync back: reset inputFocused when nav exits input mode (Tab/Escape)
+  createEffect(() => {
+    if (!nav.isInputMode()) {
+      setInputFocused(false);
+    }
+  });
+
   onCleanup(() => {
     nav.clearElements();
   });
