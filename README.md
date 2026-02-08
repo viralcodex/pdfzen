@@ -13,6 +13,14 @@ To install dependencies:
 bun install
 ```
 
+## Setup
+
+First-time setup (creates Python virtual environment and installs backend dependencies):
+
+```bash
+bun run setup
+```
+
 ## Usage
 
 To run:
@@ -21,12 +29,24 @@ To run:
 bun dev
 ```
 
+Or use the unified dev script:
+
+```bash
+bun dev:all     # Setup (if needed) + run UI
+bun dev:ui      # Run UI only
+bun dev:backend # Setup backend only
+```
+
 ## Features
 
 - **Merge PDFs**: Combine multiple PDF files into one
 - **Split PDF**: Split a PDF into multiple files by pages, ranges, or intervals
-- **Compress PDF**: Reduce PDF file size
+- **Compress PDF**: Reduce PDF file size with image optimization
 - **Rotate PDF**: Rotate pages in a PDF document
+- **Delete Pages**: Remove specific pages from a PDF
+- **Protect PDF**: Add password protection and permissions
+- **PDF to Images**: Convert PDF pages to PNG/JPG images
+- **Images to PDF**: Combine images into a single PDF
 
 ## Keyboard Shortcuts
 
