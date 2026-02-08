@@ -1,19 +1,8 @@
 import { PDFDocument, degrees } from "pdf-lib";
 import fs from "fs/promises";
+import type { RotatePDFInput, RotatePDFOutput } from "../model/models";
 
-export interface RotatePDFInput {
-  inputPath: string;
-  outputPath: string;
-  rotation: 90 | 180 | 270; // Rotation angle in degrees (clockwise)
-  pages?: number[] | "all"; // Specific pages to rotate, or 'all' for all pages
-}
-
-export interface RotatePDFOutput {
-  success: boolean;
-  outputPath?: string;
-  rotatedPages?: number;
-  error?: string;
-}
+export type { RotatePDFInput, RotatePDFOutput };
 
 /**
  * Rotates pages in a PDF file

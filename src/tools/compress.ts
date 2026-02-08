@@ -1,59 +1,35 @@
-import { PDFDocument } from "pdf-lib";
-import fs from "fs/promises";
+import { backendCompressPdf } from "../utils/backend";
+import type { CompressPDFInput, CompressPDFOutput } from "../model/models";
 
-export interface CompressPDFInput {
-  inputPath: string;
-  outputPath: string;
-  // Note: pdf-lib doesn't support quality-based compression.
-  // This option is reserved for future use with external tools like Ghostscript.
-  quality?: "low" | "medium" | "high";
-}
-
-export interface CompressPDFOutput {
-  success: boolean;
-  outputPath?: string;
-  originalSize?: number;
-  compressedSize?: number;
-  compressionRatio?: string;
-  error?: string;
-}
+export type { CompressPDFInput, CompressPDFOutput };
 
 /**
- * Compresses a PDF file by removing unused objects and optimizing structure
- * Note: pdf-lib has limited compression capabilities. For better compression,
- * you might want to use additional tools like Ghostscript or pdfcpu
- * @param input - Input PDF path, output path, and quality setting
+ * Compresses a PDF file using the Python backend (PyMuPDF)
+ * Performs: garbage collection, image recompression, stream deflation, linearization
+ * @param input - Input PDF path and output path
  * @returns Result with success status, file sizes, and compression ratio
  */
 export async function compressPDF(input: CompressPDFInput): Promise<CompressPDFOutput> {
   try {
-    const pdfBytes = await fs.readFile(input.inputPath);
-    const originalSize = pdfBytes.length;
-
-    // Load the PDF
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-
-    // Save with optimization options
-    // pdf-lib automatically removes unused objects when saving
-    const compressedPdfBytes = await pdfDoc.save({
-      useObjectStreams: true, // Use object streams for better compression
-      addDefaultPage: false,
-      objectsPerTick: 50,
+    const result = await backendCompressPdf({
+      input: input.inputPath,
+      output: input.outputPath,
     });
 
-    // Write compressed PDF
-    await fs.writeFile(input.outputPath, compressedPdfBytes);
-
-    const compressedSize = compressedPdfBytes.length;
-    const ratio = ((1 - compressedSize / originalSize) * 100).toFixed(2);
-
-    return {
-      success: true,
-      outputPath: input.outputPath,
-      originalSize,
-      compressedSize,
-      compressionRatio: `${ratio}%`,
-    };
+    if (result.success) {
+      return {
+        success: true,
+        outputPath: result.outputPath,
+        originalSize: result.originalSize,
+        compressedSize: result.compressedSize,
+        compressionRatio: result.compressionRatio,
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error || "Compression failed",
+      };
+    }
   } catch (error) {
     return {
       success: false,

@@ -1,0 +1,225 @@
+import { spawn } from "child_process";
+import path from "path";
+import fs from "fs";
+import type { BackendResult } from "../model/models";
+
+export type { BackendResult };
+
+// Path to Python backend
+const BACKEND_DIR = path.resolve(__dirname, "../../backend");
+const BACKEND_PATH = path.join(BACKEND_DIR, "pdfzen_backend.py");
+
+// Security limits
+const MAX_TIMEOUT_MS = 120000; // 2 minutes max execution time
+const MAX_OUTPUT_SIZE = 10 * 1024 * 1024; // 10MB max output
+
+// Cache Python path to avoid repeated fs checks
+let cachedPythonPath: string | null = null;
+
+/**
+ * Get the Python executable path - prefer venv if it exists
+ */
+function getPythonPath(): string {
+  if (cachedPythonPath) return cachedPythonPath;
+
+  const venvPath = path.join(BACKEND_DIR, ".venv");
+
+  if (fs.existsSync(venvPath)) {
+    if (process.platform === "win32") {
+      cachedPythonPath = path.join(venvPath, "Scripts", "python");
+    } else {
+      cachedPythonPath = path.join(venvPath, "bin", "python");
+    }
+  } else {
+    // Fallback to system Python
+    cachedPythonPath = "python3";
+  }
+
+  return cachedPythonPath;
+}
+
+/**
+ * Call the Python backend with the given command and arguments
+ * Uses spawn with argument array to prevent command injection
+ * Sensitive data (passwords) passed via stdin to avoid exposure in process list
+ */
+export async function callBackend(
+  command: string,
+  args: Record<string, any>,
+  sensitiveData?: Record<string, string>,
+): Promise<BackendResult> {
+  return new Promise((resolve) => {
+    // Build command line arguments as array (safe from injection)
+    const argsList: string[] = [BACKEND_PATH, command];
+
+    for (const [key, value] of Object.entries(args)) {
+      if (value === true) {
+        argsList.push(`--${key}`);
+      } else if (value !== false && value !== undefined && value !== null) {
+        argsList.push(`--${key}`, String(value));
+      }
+    }
+
+    // If we have sensitive data, add flag to read from stdin
+    if (sensitiveData && Object.keys(sensitiveData).length > 0) {
+      argsList.push("--stdin-secrets");
+    }
+
+    const pythonPath = getPythonPath();
+    const proc = spawn(pythonPath, argsList, {
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: MAX_TIMEOUT_MS,
+    });
+
+    let stdout = "";
+    let stderr = "";
+    let outputSize = 0;
+
+    proc.stdout.on("data", (data: Buffer) => {
+      outputSize += data.length;
+      if (outputSize <= MAX_OUTPUT_SIZE) {
+        stdout += data.toString();
+      }
+    });
+
+    proc.stderr.on("data", (data: Buffer) => {
+      stderr += data.toString();
+    });
+
+    proc.on("close", (code) => {
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        resolve({
+          success: false,
+          error: stderr || stdout || `Process exited with code ${code}`,
+        });
+      }
+    });
+
+    proc.on("error", (err) => {
+      resolve({
+        success: false,
+        error: err.message || "Backend execution failed",
+      });
+    });
+
+    // Send sensitive data via stdin (not visible in process list)
+    if (sensitiveData && Object.keys(sensitiveData).length > 0) {
+      proc.stdin.write(JSON.stringify(sensitiveData));
+    }
+    proc.stdin.end();
+  });
+}
+
+/**
+ * Check if Python backend dependencies are installed
+ */
+export async function checkBackendDeps(): Promise<{
+  allInstalled: boolean;
+  dependencies: Record<string, { installed: boolean; version?: string }>;
+}> {
+  const result = await callBackend("check-deps", {});
+
+  if (result.success && result.dependencies) {
+    return {
+      allInstalled: result.success,
+      dependencies: result.dependencies,
+    };
+  }
+
+  return {
+    allInstalled: false,
+    dependencies: {},
+  };
+}
+
+/**
+ * Install Python backend dependencies
+ */
+export async function installBackendDeps(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return await callBackend("install-deps", {});
+}
+
+/**
+ * Convert PDF to images via backend
+ */
+export async function backendPdfToImages(opts: {
+  input: string;
+  outputDir: string;
+  format?: "png" | "jpg";
+  dpi?: number;
+  pages?: string;
+}): Promise<BackendResult> {
+  return await callBackend("pdf-to-images", {
+    input: opts.input,
+    "output-dir": opts.outputDir,
+    format: opts.format || "png",
+    dpi: opts.dpi || 150,
+    pages: opts.pages,
+  });
+}
+
+/**
+ * Convert images to PDF via backend
+ */
+export async function backendImagesToPdf(opts: {
+  inputs: string[];
+  output: string;
+  pageSize?: "fit" | "a4" | "letter";
+}): Promise<BackendResult> {
+  return await callBackend("images-to-pdf", {
+    inputs: opts.inputs.join("|"),
+    output: opts.output,
+    "page-size": opts.pageSize || "fit",
+  });
+}
+
+/**
+ * Protect PDF with password via backend
+ * Passwords are passed via stdin to avoid exposure in process list
+ */
+export async function backendProtectPdf(opts: {
+  input: string;
+  output: string;
+  userPassword?: string;
+  ownerPassword?: string;
+  allowPrint?: boolean;
+  allowCopy?: boolean;
+  allowModify?: boolean;
+  allowAnnotate?: boolean;
+}): Promise<BackendResult> {
+  // Pass passwords via stdin for security (keys must match Python: user_password, owner_password)
+  const sensitiveData: Record<string, string> = {};
+  if (opts.userPassword) sensitiveData["user_password"] = opts.userPassword;
+  if (opts.ownerPassword) sensitiveData["owner_password"] = opts.ownerPassword;
+
+  return await callBackend(
+    "protect",
+    {
+      input: opts.input,
+      output: opts.output,
+      "allow-print": opts.allowPrint ?? true,
+      "allow-copy": opts.allowCopy ?? true,
+      "allow-modify": opts.allowModify ?? true,
+      "allow-annotate": opts.allowAnnotate ?? true,
+    },
+    sensitiveData,
+  );
+}
+
+/**
+ * Compress PDF via backend
+ */
+export async function backendCompressPdf(opts: {
+  input: string;
+  output: string;
+}): Promise<BackendResult> {
+  return await callBackend("compress", {
+    input: opts.input,
+    output: opts.output,
+  });
+}

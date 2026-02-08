@@ -1,0 +1,7 @@
+# PDFZen Backend Dependencies
+# PyMuPDF - handles PDF to images, compression, and more (no external deps!)
+pymupdf>=1.24.0
+# pikepdf - for PDF encryption/protection (pure Python, uses qpdf internally but bundles it)
+pikepdf>=8.0.0
+# Pillow - image processing
+Pillow>=10.0.0

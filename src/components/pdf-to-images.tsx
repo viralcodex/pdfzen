@@ -1,6 +1,6 @@
-import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
-import { rotatePDF } from "../tools/rotate";
-import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
+import { createSignal, Show, createEffect, onCleanup } from "solid-js";
+import { pdfToImages } from "../tools/pdf-to-images";
+import { getOutputDir, openOutputFolder } from "../utils/utils";
 import {
   ToolContainer,
   Label,
@@ -11,63 +11,50 @@ import {
   StatusBar,
   ToggleRow,
   Toggle,
-  TextInput,
 } from "./ui";
 import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
 
-type Rotation = 90 | 180 | 270;
-type PageMode = "all" | "specific";
+type ImageFormat = "png" | "jpg";
+type DPIOption = 72 | 150 | 300;
 
-export function RotateUI() {
+export function PDFToImagesUI() {
   const fl = useFileList({ trackPageCount: true });
   const nav = useKeyboardNav();
-  const [rotation, setRotation] = createSignal<Rotation>(90);
-  const [pageMode, setPageMode] = createSignal<PageMode>("all");
-  const [pagesInput, setPagesInput] = createSignal("");
-  const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
+  const [format, setFormat] = createSignal<ImageFormat>("png");
+  const [dpi, setDpi] = createSignal<DPIOption>(150);
+  const [inputFocused, setInputFocused] = createSignal(false);
 
-  const canRotate = createMemo(() => fl.selectedFile() !== null && !fl.isProcessing());
+  const canConvert = () => fl.selectedFile() !== null && !fl.isProcessing();
   const canAddFile = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
 
-  const clearAll = () => {
-    fl.clearAll();
-    setPagesInput("");
-  };
-
-  const handleRotate = async () => {
+  const handleConvert = async () => {
     const file = fl.selectedFile();
     if (!file || fl.isProcessing()) return;
 
     fl.setIsProcessing(true);
-    fl.setStatus({ msg: "Rotating PDF...", type: "info" });
+    fl.setStatus({ msg: "Converting PDF to images...", type: "info" });
 
     try {
-      const outputPath = await getOutputPath("rotated", file);
-      let pages: number[] | "all" = "all";
-
-      if (pageMode() === "specific") {
-        pages = pagesInput()
-          .split(",")
-          .map((s) => parseInt(s.trim()))
-          .filter((n) => !isNaN(n));
-        if (pages.length === 0) {
-          fl.setStatus({ msg: "Enter page numbers (e.g., 1, 2, 3)", type: "error" });
-          fl.setIsProcessing(false);
-          return;
-        }
-      }
-
-      const res = await rotatePDF({ inputPath: file, outputPath, rotation: rotation(), pages });
+      const outputDir = await getOutputDir("pdf-images");
+      const res = await pdfToImages({
+        inputPath: file,
+        outputDir,
+        format: format(),
+        dpi: dpi(),
+        pages: "all",
+      });
 
       if (res.success) {
         fl.setStatus({
-          msg: `Rotated ${res.rotatedPages} page(s) by ${rotation()}°`,
+          msg: `Created ${res.totalImages} image(s)`,
           type: "success",
         });
-        openFile(outputPath);
+        await openOutputFolder(outputDir).catch((_) =>
+          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+        );
       } else {
         fl.setStatus({ msg: res.error || "Unknown error", type: "error" });
       }
@@ -84,7 +71,7 @@ export function RotateUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
+
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
@@ -92,8 +79,7 @@ export function RotateUI() {
         type: "list-item",
         onEnter: () => fl.selectFile(index),
       });
-      
-      // Remove button
+
       nav.registerElement({
         id: `file-${index}-remove`,
         type: "button",
@@ -101,31 +87,34 @@ export function RotateUI() {
       });
     });
 
-    // Register rotation toggles
-    [90, 180, 270].forEach((deg) => {
-      nav.registerElement({
-        id: `rotation-${deg}`,
-        type: "toggle",
-        onEnter: () => setRotation(deg as Rotation),
-      });
-    });
-
-    // Register page mode toggles
+    // Register format toggles
     nav.registerElement({
-      id: "pagemode-all",
+      id: "toggle-png",
       type: "toggle",
-      onEnter: () => setPageMode("all"),
+      onEnter: () => setFormat("png"),
     });
     nav.registerElement({
-      id: "pagemode-specific",
+      id: "toggle-jpg",
       type: "toggle",
-      onEnter: () => setPageMode("specific"),
+      onEnter: () => setFormat("jpg"),
     });
 
-    // Register specific pages input if in specific mode
-    if (pageMode() === "specific") {
-      nav.registerElement({ id: "input-pages", type: "input" });
-    }
+    // Register DPI toggles
+    nav.registerElement({
+      id: "toggle-72",
+      type: "toggle",
+      onEnter: () => setDpi(72),
+    });
+    nav.registerElement({
+      id: "toggle-150",
+      type: "toggle",
+      onEnter: () => setDpi(150),
+    });
+    nav.registerElement({
+      id: "toggle-300",
+      type: "toggle",
+      onEnter: () => setDpi(300),
+    });
 
     // Register path input
     nav.registerElement({
@@ -146,14 +135,14 @@ export function RotateUI() {
     nav.registerElement({
       id: "clear-all-btn",
       type: "button",
-      onEnter: () => clearAll(),
+      onEnter: () => fl.clearAll(),
       canFocus: () => canClearAll(),
     });
     nav.registerElement({
-      id: "rotate-btn",
+      id: "convert-btn",
       type: "button",
-      onEnter: () => handleRotate(),
-      canFocus: () => canRotate(),
+      onEnter: () => handleConvert(),
+      canFocus: () => canConvert(),
     });
     nav.registerElement({
       id: "open-output-btn",
@@ -166,13 +155,13 @@ export function RotateUI() {
   });
 
   createEffect(() => {
-    nav.setIsInputMode(focusedInput() !== null);
+    nav.setIsInputMode(inputFocused());
   });
 
-  // Sync back: reset focusedInput when nav exits input mode (Tab/Escape)
+  // Sync back: reset inputFocused when nav exits input mode (Tab/Escape)
   createEffect(() => {
     if (!nav.isInputMode()) {
-      setFocusedInput(null);
+      setInputFocused(false);
     }
   });
 
@@ -223,48 +212,55 @@ export function RotateUI() {
         </box>
       </Show>
 
-      <Label text="Rotation" />
+      <Label text="Format" />
       <ToggleRow>
-        <Toggle label="90° →" value={90 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-90")} />
-        <Toggle label="180°" value={180 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-180")} />
         <Toggle
-          label="270° ←"
-          value={270 as Rotation}
-          selected={rotation()}
-          onSelect={setRotation}
-          focused={nav.isFocused("rotation-270")}
+          label="PNG"
+          value="png"
+          selected={format()}
+          onSelect={setFormat}
+          focused={nav.isFocused("toggle-png")}
+        />
+        <Toggle
+          label="JPG"
+          value="jpg"
+          selected={format()}
+          onSelect={setFormat}
+          focused={nav.isFocused("toggle-jpg")}
         />
       </ToggleRow>
 
-      <Label text="Apply to" />
+      <Label text="Quality (DPI)" />
       <ToggleRow>
-        <Toggle label="All Pages" value="all" selected={pageMode()} onSelect={setPageMode} focused={nav.isFocused("pagemode-all")} />
         <Toggle
-          label="Specific Pages"
-          value="specific"
-          selected={pageMode()}
-          onSelect={setPageMode}
-          focused={nav.isFocused("pagemode-specific")}
+          label="72 (Low)"
+          value={72 as DPIOption}
+          selected={dpi()}
+          onSelect={setDpi}
+          focused={nav.isFocused("toggle-72")}
+        />
+        <Toggle
+          label="150 (Medium)"
+          value={150 as DPIOption}
+          selected={dpi()}
+          onSelect={setDpi}
+          focused={nav.isFocused("toggle-150")}
+        />
+        <Toggle
+          label="300 (High)"
+          value={300 as DPIOption}
+          selected={dpi()}
+          onSelect={setDpi}
+          focused={nav.isFocused("toggle-300")}
         />
       </ToggleRow>
-
-      <Show when={pageMode() === "specific"}>
-        <TextInput
-          label="Pages (comma-separated, e.g., 1, 2, 3):"
-          value={pagesInput}
-          onInput={setPagesInput}
-          placeholder="1, 2, 3"
-          focused={focusedInput() === "input-pages" || nav.isFocused("input-pages")}
-          onFocus={() => setFocusedInput("input-pages")}
-        />
-      </Show>
 
       <PathInput
         value={fl.inputPath}
         onInput={fl.setInputPath}
         onSubmit={fl.addFile}
-        focused={focusedInput() === "path-input" || nav.isFocused("path-input")}
-        onFocus={() => setFocusedInput("path-input")}
+        focused={inputFocused() || nav.isFocused("path-input")}
+        onFocus={() => setInputFocused(true)}
       />
 
       <ButtonRow>
@@ -277,14 +273,14 @@ export function RotateUI() {
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}
-          onClick={clearAll}
+          onClick={fl.clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
-          label={fl.isProcessing() ? "Rotating..." : "Rotate"}
-          color={canRotate() ? "cyan" : "gray"}
-          onClick={handleRotate}
-          focused={nav.isFocused("rotate-btn")}
+          label={fl.isProcessing() ? "Converting..." : "Convert"}
+          color={canConvert() ? "cyan" : "gray"}
+          onClick={handleConvert}
+          focused={nav.isFocused("convert-btn")}
         />
         <Button
           label="Open Output"

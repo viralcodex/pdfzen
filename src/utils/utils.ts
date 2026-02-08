@@ -1,4 +1,4 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import fs from "fs/promises";
 import { PDFDocument } from "pdf-lib";
@@ -8,8 +8,10 @@ import { OUTPUT_DIR } from "../constants/constants";
 const openedFiles = new Set<string>(); // to track opened files
 const outputCache = new Map<string, string>(); // inputPath+tool -> outputPath
 
-const execAsync = promisify(exec);
+// Security limit for file size (100MB)
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
+const execFileAsync = promisify(execFile);
 
 const ensureOutputDir = async () => {
   try {
@@ -58,46 +60,77 @@ export const openOutputFolder = async (folderPath?: string) => {
     if (!stats.isDirectory()) {
       throw new Error("Output path is not a directory");
     }
-    const command = getPlatformOpenCommand(targetPath);
-    await execAsync(command);
+    // Use execFile with argument array to prevent command injection
+    const { cmd, args } = getPlatformOpenCommand(targetPath);
+    await execFileAsync(cmd, args);
   } catch (error) {
     console.error("Failed to open output folder:", targetPath, error);
     throw error;
   }
 };
 
-export const openFile = async (path: string) => {
+export const openFile = async (filePath: string) => {
   try {
-    if (openedFiles.has(path)) return; // prevent reopening
-    openedFiles.add(path);
-    const command = getPlatformOpenCommand(path);
-    await execAsync(command);
+    if (openedFiles.has(filePath)) return; // prevent reopening
+    openedFiles.add(filePath);
+    // Use execFile with argument array to prevent command injection
+    const { cmd, args } = getPlatformOpenCommand(filePath);
+    await execFileAsync(cmd, args);
   } catch (error) {
     console.warn("Could not auto-open file:", error);
   }
 };
 
 export const validatePdfFile = async (
-  path: string,
+  filePath: string,
 ): Promise<{ valid: boolean; error?: string }> => {
   try {
-    const stats = await fs.stat(path);
+    const stats = await fs.stat(filePath);
     if (!stats.isFile()) return { valid: false, error: "Path is not a file" };
-    if (!path.toLowerCase().endsWith(".pdf")) return { valid: false, error: "File must be a PDF" };
+    if (!filePath.toLowerCase().endsWith(".pdf")) return { valid: false, error: "File must be a PDF" };
+    // Check file size limit
+    if (stats.size > MAX_FILE_SIZE) {
+      return { valid: false, error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
+    }
     return { valid: true };
   } catch {
     return { valid: false, error: "File not found" };
   }
 };
 
-const getPlatformOpenCommand = (filePath: string): string => {
+export const validateImageFile = async (
+  filePath: string,
+): Promise<{ valid: boolean; error?: string }> => {
+  try {
+    const stats = await fs.stat(filePath);
+    if (!stats.isFile()) return { valid: false, error: "Path is not a file" };
+    const ext = filePath.toLowerCase();
+    if ([".png", ".jpg", ".jpeg"].every(e => !ext.endsWith(e))) {
+      return { valid: false, error: "File must be PNG, JPG, or JPEG" };
+    }
+    // Check file size limit
+    if (stats.size > MAX_FILE_SIZE) {
+      return { valid: false, error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
+    }
+    return { valid: true };
+  } catch {
+    return { valid: false, error: "File not found" };
+  }
+};
+
+/**
+ * Get platform-specific open command and arguments
+ * Returns command and args separately to use with execFile (safe from injection)
+ */
+const getPlatformOpenCommand = (filePath: string): { cmd: string; args: string[] } => {
   const platform = process.platform;
   if (platform === "win32") {
-    return `start "" "${filePath}"`;
+    // Windows: use 'cmd' with /c start
+    return { cmd: "cmd", args: ["/c", "start", "", filePath] };
   } else if (platform === "darwin") {
-    return `open "${filePath}"`;
+    return { cmd: "open", args: [filePath] };
   } else {
-    return `xdg-open "${filePath}"`;
+    return { cmd: "xdg-open", args: [filePath] };
   }
 };
 

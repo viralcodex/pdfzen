@@ -1,16 +1,14 @@
 import { createSignal, createMemo } from "solid-js";
 import { usePaste } from "@opentui/solid";
-import { unescapePath, validatePdfFile, getPageCount } from "../utils/utils";
-import type { StatusType } from "../components/ui";
+import { unescapePath, validatePdfFile, validateImageFile, getPageCount } from "../utils/utils";
+import type { StatusType, FileListOptions } from "../model/models";
 
 type Status = { msg: string; type: StatusType };
 
-export interface FileListOptions {
-  trackPageCount?: boolean;
-}
+export type { FileListOptions };
 
 export function useFileList(options: FileListOptions = {}) {
-  const { trackPageCount = false } = options;
+  const { trackPageCount = false, acceptImages = false } = options;
 
   const [files, setFiles] = createSignal<string[]>([]);
   const [selectedIndex, setSelectedIndex] = createSignal<number | null>(null);
@@ -45,7 +43,8 @@ export function useFileList(options: FileListOptions = {}) {
     }
 
     setStatus({ msg: "Validating file...", type: "info" });
-    const { valid, error } = await validatePdfFile(cleanPath);
+    const validator = acceptImages ? validateImageFile : validatePdfFile;
+    const { valid, error } = await validator(cleanPath);
 
     if (!valid) {
       setStatus(

@@ -7,20 +7,29 @@ import { MergeUI } from "./components/merge";
 import { CompressUI } from "./components/compress";
 import { RotateUI } from "./components/rotate";
 import { SplitUI } from "./components/split";
+import { DeleteUI } from "./components/delete";
+import { PDFToImagesUI } from "./components/pdf-to-images";
+import { ImagesToPDFUI } from "./components/images-to-pdf";
+import { ProtectUI } from "./components/protect";
 import { toolsMenu } from "./constants/constants";
 import Hero from "./components/hero";
+
+// Static tool component mapping - defined outside render for performance
+const toolComponents: Record<string, () => any> = {
+  merge: MergeUI,
+  split: SplitUI,
+  compress: CompressUI,
+  rotate: RotateUI,
+  delete: DeleteUI,
+  pdfToImages: PDFToImagesUI,
+  imagesToPDF: ImagesToPDFUI,
+  protect: ProtectUI,
+};
 
 render(() => {
   const [selectedTool, setSelectedTool] = createSignal<string>("");
   const [escapeCount, setEscapeCount] = createSignal(0);
   let escapeTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const toolComponents: Record<string, () => any> = {
-    merge: MergeUI,
-    split: SplitUI,
-    compress: CompressUI,
-    rotate: RotateUI,
-  };
 
   const getToolName = (command: string) =>
     toolsMenu.find((t) => t.command === command)?.name || command;
@@ -56,7 +65,7 @@ render(() => {
       backgroundColor="#141414"
     >
       {selectedTool() === "" && (
-        <box>
+        <box flexDirection="column" alignItems="center">
           <Hero />
           <ToolsMenu selectedTool={selectedTool} selectTool={selectTool} />
         </box>

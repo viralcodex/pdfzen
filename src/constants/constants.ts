@@ -9,9 +9,9 @@ export const toolsMenu = [
   { name: "Compress PDF", command: "compress" },
   { name: "Rotate PDF", command: "rotate" },
   { name: "Delete Pages", command: "delete" },
-  { name: "PDF to Images", command: "pdf-to-images" },
-  { name: "Images to PDF", command: "images-to-pdf" },
-  { name: "Protect PDF", command: "protect" },
+  { name: "PDF to Images", command: "pdfToImages" },
+  { name: "Images to PDF", command: "imagesToPDF" },
+  { name: "Encrypt PDF", command: "protect" },
 ];
 
 export const EmptyBorderChars = {

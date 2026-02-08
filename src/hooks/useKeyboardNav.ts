@@ -1,13 +1,9 @@
 import { createSignal, createMemo } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { type KeyEvent } from "@opentui/core";
+import type { FocusableElement } from "../model/models";
 
-export type FocusableElement = {
-  id: string;
-  type: "button" | "input" | "list-item" | "toggle" | "tool";
-  onEnter?: () => void;
-  canFocus?: () => boolean;
-};
+export type { FocusableElement };
 
 export function useKeyboardNav() {
   const [focusIndex, setFocusIndex] = createSignal(0);
@@ -74,7 +70,20 @@ export function useKeyboardNav() {
   };
 
   useKeyboard((event: KeyEvent) => {
-    if (isInputMode()) return;
+    // Allow Escape and Tab to exit input mode
+    if (isInputMode()) {
+      if (event.name === "escape") {
+        setIsInputMode(false);
+      } else if (event.name === "tab") {
+        setIsInputMode(false);
+        if (event.shift) {
+          focusPrev();
+        } else {
+          focusNext();
+        }
+      }
+      return;
+    }
     
     switch (event.name) {
       case "tab":

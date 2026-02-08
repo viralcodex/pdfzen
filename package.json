@@ -5,7 +5,11 @@
   "module": "src/index.tsx",
   "scripts": {
     "dev": "bun run --watch src/index.tsx",
-    "build": "bun build src/index.tsx --outdir=dist --target=browser --minify",
+    "dev:all": "./dev.sh",
+    "dev:ui": "./dev.sh ui",
+    "dev:backend": "./dev.sh backend",
+    "setup": "./dev.sh setup",
+    "build": "bun build ./src/index.tsx --outdir=dist --target=bun --minify --sourcemap",
     "start": "bun run dist/index.js",
     "lint": "oxlint .",
     "format": "oxfmt ."

@@ -28,7 +28,7 @@ export function SplitUI() {
   const [rangeStart, setRangeStart] = createSignal("");
   const [rangeEnd, setRangeEnd] = createSignal("");
   const [everyN, setEveryN] = createSignal("");
-  const [inputFocused, setInputFocused] = createSignal(false);
+  const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
   const terminalDimensions = useTerminalDimensions();
   const isCompact = () => terminalDimensions().height < 30 || terminalDimensions().width < 60;
 
@@ -188,7 +188,14 @@ export function SplitUI() {
   });
 
   createEffect(() => {
-    nav.setIsInputMode(inputFocused());
+    nav.setIsInputMode(focusedInput() !== null);
+  });
+
+  // Sync back: reset focusedInput when nav exits input mode (Tab/Escape)
+  createEffect(() => {
+    if (!nav.isInputMode()) {
+      setFocusedInput(null);
+    }
   });
 
   onCleanup(() => {
@@ -263,8 +270,8 @@ export function SplitUI() {
           value={pagesInput}
           onInput={setPagesInput}
           placeholder={fl.pageCount() > 1 ? `1-${fl.pageCount() - 1}` : "1"}
-          focused={inputFocused() || nav.isFocused("input-splitAt")}
-          onFocus={() => setInputFocused(true)}
+          focused={focusedInput() === "input-splitAt" || nav.isFocused("input-splitAt")}
+          onFocus={() => setFocusedInput("input-splitAt")}
         />
       </Show>
 
@@ -281,8 +288,8 @@ export function SplitUI() {
             value={rangeStart}
             onInput={setRangeStart}
             placeholder="1"
-            focused={inputFocused() || nav.isFocused("input-rangeStart")}
-            onFocus={() => setInputFocused(true)}
+            focused={focusedInput() === "input-rangeStart" || nav.isFocused("input-rangeStart")}
+            onFocus={() => setFocusedInput("input-rangeStart")}
             flexGrow={1}
           />
           <TextInput
@@ -290,8 +297,8 @@ export function SplitUI() {
             value={rangeEnd}
             onInput={setRangeEnd}
             placeholder={String(fl.pageCount() || "")}
-            focused={inputFocused() || nav.isFocused("input-rangeEnd")}
-            onFocus={() => setInputFocused(true)}
+            focused={focusedInput() === "input-rangeEnd" || nav.isFocused("input-rangeEnd")}
+            onFocus={() => setFocusedInput("input-rangeEnd")}
             flexGrow={1}
           />
         </box>
@@ -303,8 +310,8 @@ export function SplitUI() {
           value={everyN}
           onInput={setEveryN}
           placeholder="2"
-          focused={inputFocused() || nav.isFocused("input-every")}
-          onFocus={() => setInputFocused(true)}
+          focused={focusedInput() === "input-every" || nav.isFocused("input-every")}
+          onFocus={() => setFocusedInput("input-every")}
         />
       </Show>
 
@@ -312,8 +319,8 @@ export function SplitUI() {
         value={fl.inputPath}
         onInput={fl.setInputPath}
         onSubmit={fl.addFile}
-        focused={inputFocused() || nav.isFocused("path-input")}
-        onFocus={() => setInputFocused(true)}
+        focused={focusedInput() === "path-input" || nav.isFocused("path-input")}
+        onFocus={() => setFocusedInput("path-input")}
       />
 
       <ButtonRow>

@@ -1,5 +1,5 @@
-import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
-import { rotatePDF } from "../tools/rotate";
+import { createSignal, Show, createEffect, onCleanup } from "solid-js";
+import { protectPDF } from "../tools/protect";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import {
   ToolContainer,
@@ -9,64 +9,56 @@ import {
   ButtonRow,
   Button,
   StatusBar,
-  ToggleRow,
-  Toggle,
   TextInput,
 } from "./ui";
 import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
 
-type Rotation = 90 | 180 | 270;
-type PageMode = "all" | "specific";
-
-export function RotateUI() {
-  const fl = useFileList({ trackPageCount: true });
+export function ProtectUI() {
+  const fl = useFileList();
   const nav = useKeyboardNav();
-  const [rotation, setRotation] = createSignal<Rotation>(90);
-  const [pageMode, setPageMode] = createSignal<PageMode>("all");
-  const [pagesInput, setPagesInput] = createSignal("");
+  const [userPassword, setUserPassword] = createSignal("");
+  const [ownerPassword, setOwnerPassword] = createSignal("");
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
 
-  const canRotate = createMemo(() => fl.selectedFile() !== null && !fl.isProcessing());
+  const canProtect = () => {
+    const file = fl.selectedFile();
+    const hasPassword = userPassword().trim().length > 0 || ownerPassword().trim().length > 0;
+    return file !== null && hasPassword && !fl.isProcessing();
+  };
   const canAddFile = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
 
   const clearAll = () => {
     fl.clearAll();
-    setPagesInput("");
+    setUserPassword("");
+    setOwnerPassword("");
   };
 
-  const handleRotate = async () => {
+  const handleProtect = async () => {
     const file = fl.selectedFile();
     if (!file || fl.isProcessing()) return;
 
+    if (!userPassword().trim() && !ownerPassword().trim()) {
+      fl.setStatus({ msg: "Enter at least one password", type: "error" });
+      return;
+    }
+
     fl.setIsProcessing(true);
-    fl.setStatus({ msg: "Rotating PDF...", type: "info" });
+    fl.setStatus({ msg: "Protecting PDF...", type: "info" });
 
     try {
-      const outputPath = await getOutputPath("rotated", file);
-      let pages: number[] | "all" = "all";
-
-      if (pageMode() === "specific") {
-        pages = pagesInput()
-          .split(",")
-          .map((s) => parseInt(s.trim()))
-          .filter((n) => !isNaN(n));
-        if (pages.length === 0) {
-          fl.setStatus({ msg: "Enter page numbers (e.g., 1, 2, 3)", type: "error" });
-          fl.setIsProcessing(false);
-          return;
-        }
-      }
-
-      const res = await rotatePDF({ inputPath: file, outputPath, rotation: rotation(), pages });
+      const outputPath = await getOutputPath("protected", file);
+      const res = await protectPDF({
+        inputPath: file,
+        outputPath,
+        userPassword: userPassword().trim() || undefined,
+        ownerPassword: ownerPassword().trim() || undefined,
+      });
 
       if (res.success) {
-        fl.setStatus({
-          msg: `Rotated ${res.rotatedPages} page(s) by ${rotation()}°`,
-          type: "success",
-        });
+        fl.setStatus({ msg: "PDF protected successfully", type: "success" });
         openFile(outputPath);
       } else {
         fl.setStatus({ msg: res.error || "Unknown error", type: "error" });
@@ -84,7 +76,7 @@ export function RotateUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
+
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
@@ -92,8 +84,7 @@ export function RotateUI() {
         type: "list-item",
         onEnter: () => fl.selectFile(index),
       });
-      
-      // Remove button
+
       nav.registerElement({
         id: `file-${index}-remove`,
         type: "button",
@@ -101,31 +92,9 @@ export function RotateUI() {
       });
     });
 
-    // Register rotation toggles
-    [90, 180, 270].forEach((deg) => {
-      nav.registerElement({
-        id: `rotation-${deg}`,
-        type: "toggle",
-        onEnter: () => setRotation(deg as Rotation),
-      });
-    });
-
-    // Register page mode toggles
-    nav.registerElement({
-      id: "pagemode-all",
-      type: "toggle",
-      onEnter: () => setPageMode("all"),
-    });
-    nav.registerElement({
-      id: "pagemode-specific",
-      type: "toggle",
-      onEnter: () => setPageMode("specific"),
-    });
-
-    // Register specific pages input if in specific mode
-    if (pageMode() === "specific") {
-      nav.registerElement({ id: "input-pages", type: "input" });
-    }
+    // Register password inputs
+    nav.registerElement({ id: "input-user-password", type: "input" });
+    nav.registerElement({ id: "input-owner-password", type: "input" });
 
     // Register path input
     nav.registerElement({
@@ -150,10 +119,10 @@ export function RotateUI() {
       canFocus: () => canClearAll(),
     });
     nav.registerElement({
-      id: "rotate-btn",
+      id: "protect-btn",
       type: "button",
-      onEnter: () => handleRotate(),
-      canFocus: () => canRotate(),
+      onEnter: () => handleProtect(),
+      canFocus: () => canProtect(),
     });
     nav.registerElement({
       id: "open-output-btn",
@@ -218,46 +187,37 @@ export function RotateUI() {
               attributes={TextAttributes.BOLD}
               content={fl.selectedFile() ?? ""}
             />
-            <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
           </box>
         </box>
       </Show>
 
-      <Label text="Rotation" />
-      <ToggleRow>
-        <Toggle label="90° →" value={90 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-90")} />
-        <Toggle label="180°" value={180 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-180")} />
-        <Toggle
-          label="270° ←"
-          value={270 as Rotation}
-          selected={rotation()}
-          onSelect={setRotation}
-          focused={nav.isFocused("rotation-270")}
-        />
-      </ToggleRow>
-
-      <Label text="Apply to" />
-      <ToggleRow>
-        <Toggle label="All Pages" value="all" selected={pageMode()} onSelect={setPageMode} focused={nav.isFocused("pagemode-all")} />
-        <Toggle
-          label="Specific Pages"
-          value="specific"
-          selected={pageMode()}
-          onSelect={setPageMode}
-          focused={nav.isFocused("pagemode-specific")}
-        />
-      </ToggleRow>
-
-      <Show when={pageMode() === "specific"}>
+      <box flexDirection="column" marginTop={1} flexShrink={0}>
         <TextInput
-          label="Pages (comma-separated, e.g., 1, 2, 3):"
-          value={pagesInput}
-          onInput={setPagesInput}
-          placeholder="1, 2, 3"
-          focused={focusedInput() === "input-pages" || nav.isFocused("input-pages")}
-          onFocus={() => setFocusedInput("input-pages")}
+          label="User Password (required to open):"
+          value={userPassword}
+          onInput={setUserPassword}
+          placeholder="Leave empty for no open password"
+          focused={focusedInput() === "input-user-password" || nav.isFocused("input-user-password")}
+          onFocus={() => setFocusedInput("input-user-password")}
         />
-      </Show>
+
+        <TextInput
+          label="Owner Password (required to modify):"
+          value={ownerPassword}
+          onInput={setOwnerPassword}
+          placeholder="Leave empty to use user password"
+          focused={focusedInput() === "input-owner-password" || nav.isFocused("input-owner-password")}
+          onFocus={() => setFocusedInput("input-owner-password")}
+        />
+      </box>
+
+      <box
+        marginTop={1}
+        paddingLeft={1}
+        flexShrink={0}
+      >
+        <text fg="#95a5a6" content="Note: Requires qpdf to be installed" />
+      </box>
 
       <PathInput
         value={fl.inputPath}
@@ -281,10 +241,10 @@ export function RotateUI() {
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
-          label={fl.isProcessing() ? "Rotating..." : "Rotate"}
-          color={canRotate() ? "cyan" : "gray"}
-          onClick={handleRotate}
-          focused={nav.isFocused("rotate-btn")}
+          label={fl.isProcessing() ? "Protecting..." : "Protect PDF"}
+          color={canProtect() ? "cyan" : "gray"}
+          onClick={handleProtect}
+          focused={nav.isFocused("protect-btn")}
         />
         <Button
           label="Open Output"
