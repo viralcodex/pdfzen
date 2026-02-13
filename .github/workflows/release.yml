@@ -25,11 +25,9 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
-            bun_target: bun-linux-x64
           - os: windows-latest
             platform: windows
             arch: x64
-            bun_target: bun-windows-x64
 
     runs-on: ${{ matrix.os }}
     
@@ -67,9 +65,8 @@ jobs:
           NODE_ENV: production
         run: |
           mkdir -p dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}
-          bun build --compile --minify --target=${{ matrix.bun_target }} \
-            ./src/index.tsx \
-            --outfile dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}/pdfzen-tui
+          bun run scripts/build.ts native \
+            dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}/pdfzen-tui
 
       - name: Build TUI (Windows)
         if: matrix.platform == 'windows'
@@ -77,9 +74,8 @@ jobs:
           NODE_ENV: production
         run: |
           mkdir -p dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}
-          bun build --compile --minify --target=${{ matrix.bun_target }} `
-            ./src/index.tsx `
-            --outfile dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}/pdfzen-tui.exe
+          bun run scripts/build.ts native `
+            dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}/pdfzen-tui.exe
 
       - name: Build Python backend
         shell: bash
@@ -188,24 +184,9 @@ jobs:
           
           mkdir -p "$RELEASE_DIR"/{lib,backend}
           
-          # Compile TUI for both Apple Silicon and Intel
-          bun build --compile --minify --target=bun-darwin-arm64 \
-            ./src/index.tsx --outfile "$RELEASE_DIR/lib/pdfzen-tui-arm64"
-          bun build --compile --minify --target=bun-darwin-x64 \
-            ./src/index.tsx --outfile "$RELEASE_DIR/lib/pdfzen-tui-x64"
-          
-          # Create universal launcher that picks correct binary
-          cat > "$RELEASE_DIR/lib/pdfzen-tui" << 'EOF'
-          #!/bin/bash
-          SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-          ARCH=$(uname -m)
-          if [[ "$ARCH" == "arm64" ]]; then
-            exec "$SCRIPT_DIR/pdfzen-tui-arm64" "$@"
-          else
-            exec "$SCRIPT_DIR/pdfzen-tui-x64" "$@"
-          fi
-          EOF
-          chmod +x "$RELEASE_DIR/lib/pdfzen-tui"
+          # Build TUI for current platform (arm64 on macos-latest)
+          # Intel Macs will use Rosetta 2 to run arm64 binaries
+          bun run scripts/build.ts native "$RELEASE_DIR/lib/pdfzen-tui"
           
           # Copy backend source (Homebrew installs Python deps via pip)
           cp backend/pdfzen_backend.py "$RELEASE_DIR/backend/"
