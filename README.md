@@ -4,37 +4,39 @@
   <em>A terminal-based PDF utility tool for merging, splitting, compressing, and rotating PDFs.</em>
 </p>
 
-
 ## Installation
 
-To install dependencies:
+### macOS (Homebrew)
 
 ```bash
+brew tap viralcodex/pdfzen
+brew install pdfzen
+```
+
+### Linux / Windows
+
+Download the latest release from [GitHub Releases](https://github.com/viralcodex/pdfzen/releases).
+
+**Linux:**
+```bash
+tar -xzf pdfzen-*-linux-x64.tar.gz
+./pdfzen-*-linux-x64/pdfzen
+```
+
+**Windows:**
+1. Extract `pdfzen-*-windows-x64.zip`
+2. Run `pdfzen.bat`
+
+### From Source
+
+Requires [Bun](https://bun.sh) and Python 3.10+.
+
+```bash
+git clone https://github.com/viralcodex/pdfzen.git
+cd pdfzen
 bun install
-```
-
-## Setup
-
-First-time setup (creates Python virtual environment and installs backend dependencies):
-
-```bash
 bun run setup
-```
-
-## Usage
-
-To run:
-
-```bash
 bun dev
-```
-
-Or use the unified dev script:
-
-```bash
-bun dev:all     # Setup (if needed) + run UI
-bun dev:ui      # Run UI only
-bun dev:backend # Setup backend only
 ```
 
 ## Features
@@ -69,9 +71,3 @@ When navigating file lists, you can tab through:
 ### Adding Files
 - Drag & drop PDF files into the terminal
 - Enter file path manually and press Enter or click "Add Files"
-
-## Debug Panel
-
----
-
-This project was created using `bun create tui`. [create-tui](https://git.new/create-tui) is the easiest way to get started with OpenTUI.

@@ -10,6 +10,7 @@
     "dev:backend": "./dev.sh backend",
     "setup": "./dev.sh setup",
     "build": "bun build ./src/index.tsx --outdir=dist --target=bun --minify --sourcemap",
+    "build:standalone": "./scripts/build-standalone.sh",
     "start": "bun run dist/index.js",
     "lint": "oxlint .",
     "format": "oxfmt ."

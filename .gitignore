@@ -37,3 +37,14 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 backend/.venv
 __pycache__
 *.pyc
+
+# Build artifacts
+release/
+*.spec
+build/
+
+# Secrets - never commit these
+*.pem
+*.key
+.env*
+!.env.example
