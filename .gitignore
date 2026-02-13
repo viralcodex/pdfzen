@@ -38,5 +38,13 @@ backend/.venv
 __pycache__
 *.pyc
 
-# Agent skills
-.agents
+# Build artifacts
+release/
+*.spec
+build/
+
+# Secrets - never commit these
+*.pem
+*.key
+.env*
+!.env.example

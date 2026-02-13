@@ -3,37 +3,46 @@ import type { BackendResult } from "../model/models";
 
 export type { BackendResult };
 
-// Path to Python backend (using import.meta.dir for Bun)
-const BACKEND_DIR = resolve(import.meta.dir, "../../backend");
-const BACKEND_PATH = join(BACKEND_DIR, "pdfzen_backend.py");
+// Path to Python backend (development mode)
+const BACKEND_DIR = path.resolve(__dirname, "../../backend");
+const BACKEND_PATH = path.join(BACKEND_DIR, "pdfzen_backend.py");
 
 // Security limits
 const MAX_TIMEOUT_MS = 120000; // 2 minutes max execution time
 
-// Cache Python path to avoid repeated fs checks
-let cachedPythonPath: string | null = null;
+// Cache backend config to avoid repeated checks
+let cachedBackendConfig: { executable: string; args: string[] } | null = null;
 
 /**
- * Get the Python executable path - prefer venv if it exists
+ * Get the backend executable and base args
+ * Supports standalone builds (PDFZEN_BACKEND env) and development mode
  */
-async function getPythonPath(): Promise<string> {
-  if (cachedPythonPath) return cachedPythonPath;
+function getBackendConfig(): { executable: string; args: string[] } {
+  if (cachedBackendConfig) return cachedBackendConfig;
 
-  const venvPath = join(BACKEND_DIR, ".venv");
-  const venvExists = await Bun.file(venvPath).exists();
+  // Standalone mode: use bundled backend executable
+  const standaloneBackend = process.env.PDFZEN_BACKEND;
+  if (standaloneBackend && fs.existsSync(standaloneBackend)) {
+    cachedBackendConfig = { executable: standaloneBackend, args: [] };
+    return cachedBackendConfig;
+  }
+
+  // Development mode: use Python
+  const venvPath = path.join(BACKEND_DIR, ".venv");
+  let pythonPath: string;
 
   if (venvExists) {
     if (process.platform === "win32") {
-      cachedPythonPath = join(venvPath, "Scripts", "python");
+      pythonPath = path.join(venvPath, "Scripts", "python");
     } else {
-      cachedPythonPath = join(venvPath, "bin", "python");
+      pythonPath = path.join(venvPath, "bin", "python");
     }
   } else {
-    // Fallback to system Python
-    cachedPythonPath = "python3";
+    pythonPath = "python3";
   }
 
-  return cachedPythonPath;
+  cachedBackendConfig = { executable: pythonPath, args: [BACKEND_PATH] };
+  return cachedBackendConfig;
 }
 
 /**
@@ -46,9 +55,11 @@ export async function callBackend(
   args: Record<string, any>,
   sensitiveData?: Record<string, string>,
 ): Promise<BackendResult> {
-  try {
+  return new Promise((resolve) => {
+    const config = getBackendConfig();
+    
     // Build command line arguments as array (safe from injection)
-    const argsList: string[] = [BACKEND_PATH, command];
+    const argsList: string[] = [...config.args, command];
 
     for (const [key, value] of Object.entries(args)) {
       if (value === true) {
@@ -63,12 +74,9 @@ export async function callBackend(
       argsList.push("--stdin-secrets");
     }
 
-    const pythonPath = await getPythonPath();
-
-    const proc = Bun.spawn([pythonPath, ...argsList], {
-      stdin: "pipe",
-      stdout: "pipe",
-      stderr: "pipe",
+    const proc = spawn(config.executable, argsList, {
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: MAX_TIMEOUT_MS,
     });
 
     // Send sensitive data via stdin (not visible in process list)
