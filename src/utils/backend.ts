@@ -1,11 +1,13 @@
+import { spawn } from "bun";
 import { join, resolve } from "path";
+import { existsSync } from "fs";
 import type { BackendResult } from "../model/models";
 
 export type { BackendResult };
 
 // Path to Python backend (development mode)
-const BACKEND_DIR = path.resolve(__dirname, "../../backend");
-const BACKEND_PATH = path.join(BACKEND_DIR, "pdfzen_backend.py");
+const BACKEND_DIR = resolve(__dirname, "../../backend");
+const BACKEND_PATH = join(BACKEND_DIR, "pdfzen_backend.py");
 
 // Security limits
 const MAX_TIMEOUT_MS = 120000; // 2 minutes max execution time
@@ -22,20 +24,20 @@ function getBackendConfig(): { executable: string; args: string[] } {
 
   // Standalone mode: use bundled backend executable
   const standaloneBackend = process.env.PDFZEN_BACKEND;
-  if (standaloneBackend && fs.existsSync(standaloneBackend)) {
+  if (standaloneBackend && existsSync(standaloneBackend)) {
     cachedBackendConfig = { executable: standaloneBackend, args: [] };
     return cachedBackendConfig;
   }
 
   // Development mode: use Python
-  const venvPath = path.join(BACKEND_DIR, ".venv");
+  const venvPath = join(BACKEND_DIR, ".venv");
   let pythonPath: string;
 
-  if (venvExists) {
+  if (existsSync(venvPath)) {
     if (process.platform === "win32") {
-      pythonPath = path.join(venvPath, "Scripts", "python");
+      pythonPath = join(venvPath, "Scripts", "python");
     } else {
-      pythonPath = path.join(venvPath, "bin", "python");
+      pythonPath = join(venvPath, "bin", "python");
     }
   } else {
     pythonPath = "python3";
@@ -55,7 +57,7 @@ export async function callBackend(
   args: Record<string, any>,
   sensitiveData?: Record<string, string>,
 ): Promise<BackendResult> {
-  return new Promise((resolve) => {
+  try {
     const config = getBackendConfig();
     
     // Build command line arguments as array (safe from injection)
@@ -74,16 +76,18 @@ export async function callBackend(
       argsList.push("--stdin-secrets");
     }
 
-    const proc = spawn(config.executable, argsList, {
-      stdio: ["pipe", "pipe", "pipe"],
-      timeout: MAX_TIMEOUT_MS,
+    const proc = spawn({
+      cmd: [config.executable, ...argsList],
+      stdin: "pipe",
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
     // Send sensitive data via stdin (not visible in process list)
-    if (sensitiveData && Object.keys(sensitiveData).length > 0) {
+    if (sensitiveData && Object.keys(sensitiveData).length > 0 && proc.stdin) {
       proc.stdin.write(JSON.stringify(sensitiveData));
     }
-    proc.stdin.end();
+    proc.stdin?.end();
 
     // Set up timeout
     const timeoutPromise = new Promise<BackendResult>((resolve) => {
