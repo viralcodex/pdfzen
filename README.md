@@ -9,8 +9,7 @@
 ### macOS (Homebrew)
 
 ```bash
-brew tap viralcodex/pdfzen
-brew install pdfzen
+brew install viralcodex/pdfzen/pdfzen
 ```
 
 ### Linux / Windows
