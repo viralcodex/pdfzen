@@ -42,6 +42,11 @@ __pycache__
 release/
 *.spec
 build/
+.build-temp
+
+# Tree-sitter / OpenTUI generated files
+*.wasm
+*.scm
 
 # Secrets - never commit these
 *.pem
