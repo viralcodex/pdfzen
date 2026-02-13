@@ -1,5 +1,4 @@
 import { PDFDocument } from "pdf-lib";
-import fs from "fs/promises";
 import type { DeletePagesInput, DeletePagesOutput } from "../model/models";
 
 export type { DeletePagesInput, DeletePagesOutput };
@@ -11,7 +10,7 @@ export type { DeletePagesInput, DeletePagesOutput };
  */
 export async function deletePages(input: DeletePagesInput): Promise<DeletePagesOutput> {
   try {
-    const pdfBytes = await fs.readFile(input.inputPath);
+    const pdfBytes = await Bun.file(input.inputPath).arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const totalPages = pdfDoc.getPageCount();
 
@@ -44,7 +43,7 @@ export async function deletePages(input: DeletePagesInput): Promise<DeletePagesO
 
     // Save the modified PDF
     const modifiedPdfBytes = await pdfDoc.save();
-    await fs.writeFile(input.outputPath, modifiedPdfBytes);
+    await Bun.write(input.outputPath, modifiedPdfBytes);
 
     return {
       success: true,
@@ -66,7 +65,7 @@ export async function deletePages(input: DeletePagesInput): Promise<DeletePagesO
  * @returns Total number of pages
  */
 export async function getPDFPageCount(inputPath: string): Promise<number> {
-  const pdfBytes = await fs.readFile(inputPath);
+  const pdfBytes = await Bun.file(inputPath).arrayBuffer();
   const pdfDoc = await PDFDocument.load(pdfBytes);
   return pdfDoc.getPageCount();
 }

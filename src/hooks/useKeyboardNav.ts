@@ -11,9 +11,7 @@ export function useKeyboardNav() {
   const [isInputMode, setIsInputMode] = createSignal(false);
 
   // Memoize valid elements to avoid recalculating on every render
-  const validElements = createMemo(() => 
-    elements().filter((el) => !el.canFocus || el.canFocus())
-  );
+  const validElements = createMemo(() => elements().filter((el) => !el.canFocus || el.canFocus()));
 
   // Memoize current focused element
   const focusedElement = createMemo(() => {
@@ -33,7 +31,7 @@ export function useKeyboardNav() {
     setElements((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const clampIndex = (idx: number, length: number) => 
+  const clampIndex = (idx: number, length: number) =>
     length === 0 ? 0 : ((idx % length) + length) % length;
 
   const focusNext = () => {
@@ -84,7 +82,7 @@ export function useKeyboardNav() {
       }
       return;
     }
-    
+
     switch (event.name) {
       case "tab":
         if (event.shift) {

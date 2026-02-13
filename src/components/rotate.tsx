@@ -84,7 +84,7 @@ export function RotateUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
+
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
@@ -92,7 +92,7 @@ export function RotateUI() {
         type: "list-item",
         onEnter: () => fl.selectFile(index),
       });
-      
+
       // Remove button
       nav.registerElement({
         id: `file-${index}-remove`,
@@ -160,7 +160,7 @@ export function RotateUI() {
       type: "button",
       onEnter: () =>
         openOutputFolder().catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         ),
     });
   });
@@ -213,11 +213,7 @@ export function RotateUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text
-              fg="#3498db"
-              attributes={TextAttributes.BOLD}
-              content={fl.selectedFile() ?? ""}
-            />
+            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
             <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
           </box>
         </box>
@@ -225,8 +221,20 @@ export function RotateUI() {
 
       <Label text="Rotation" />
       <ToggleRow>
-        <Toggle label="90° →" value={90 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-90")} />
-        <Toggle label="180°" value={180 as Rotation} selected={rotation()} onSelect={setRotation} focused={nav.isFocused("rotation-180")} />
+        <Toggle
+          label="90° →"
+          value={90 as Rotation}
+          selected={rotation()}
+          onSelect={setRotation}
+          focused={nav.isFocused("rotation-90")}
+        />
+        <Toggle
+          label="180°"
+          value={180 as Rotation}
+          selected={rotation()}
+          onSelect={setRotation}
+          focused={nav.isFocused("rotation-180")}
+        />
         <Toggle
           label="270° ←"
           value={270 as Rotation}
@@ -238,7 +246,13 @@ export function RotateUI() {
 
       <Label text="Apply to" />
       <ToggleRow>
-        <Toggle label="All Pages" value="all" selected={pageMode()} onSelect={setPageMode} focused={nav.isFocused("pagemode-all")} />
+        <Toggle
+          label="All Pages"
+          value="all"
+          selected={pageMode()}
+          onSelect={setPageMode}
+          focused={nav.isFocused("pagemode-all")}
+        />
         <Toggle
           label="Specific Pages"
           value="specific"
@@ -271,18 +285,21 @@ export function RotateUI() {
         <Button
           label="Add File"
           color={canAddFile() ? "green" : "gray"}
+          disabled={!canAddFile()}
           onClick={fl.addFile}
           focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}
+          disabled={!canClearAll()}
           onClick={clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Rotating..." : "Rotate"}
           color={canRotate() ? "cyan" : "gray"}
+          disabled={!canRotate()}
           onClick={handleRotate}
           focused={nav.isFocused("rotate-btn")}
         />

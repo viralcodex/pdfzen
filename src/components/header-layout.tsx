@@ -1,5 +1,5 @@
 import { TextAttributes } from "@opentui/core";
-import type { JSX } from "solid-js";
+import { createSignal, type JSX } from "solid-js";
 import { EmptyBorderChars } from "../constants/constants";
 
 interface ToolLayoutProps {
@@ -9,6 +9,8 @@ interface ToolLayoutProps {
 }
 
 export function HeaderLayout(props: ToolLayoutProps) {
+  const [backHovered, setBackHovered] = createSignal(false);
+
   return (
     <box flexDirection="column" width="100%" height="100%">
       <box
@@ -30,15 +32,17 @@ export function HeaderLayout(props: ToolLayoutProps) {
           justifyContent="center"
           alignItems="center"
           onMouseDown={props.onBack}
+          onMouseOver={() => setBackHovered(true)}
+          onMouseOut={() => setBackHovered(false)}
           border={["bottom"]}
-          backgroundColor={"#3b3b3b"}
-          borderColor={"#ff6200"}
+          backgroundColor={backHovered() ? "#4a4a4a" : "#3b3b3b"}
+          borderColor={backHovered() ? "#68ffc0" : "#ff6200"}
           customBorderChars={{
             ...EmptyBorderChars,
-            horizontal: "▂",
+            horizontal: backHovered() ? "▄" : "▂",
           }}
         >
-          <text fg="yellow" content={"esc"} />
+          <text fg={backHovered() ? "#68ffc0" : "yellow"} content={"esc"} />
         </box>
         <box
           flexGrow={1}
