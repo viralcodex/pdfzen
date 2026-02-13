@@ -137,8 +137,9 @@ jobs:
         shell: bash
         run: |
           cd dist
+          shopt -s nullglob
           for f in *.tar.gz *.zip; do
-            [ -f "$f" ] && sha256sum "$f" > "$f.sha256"
+            sha256sum "$f" > "$f.sha256"
           done
 
       - name: Upload artifact
