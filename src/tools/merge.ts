@@ -1,5 +1,4 @@
 import { PDFDocument } from "pdf-lib";
-import fs from "fs/promises";
 import type { MergePDFsInput, MergePDFsOutput } from "../model/models";
 
 export type { MergePDFsInput, MergePDFsOutput };
@@ -24,7 +23,7 @@ export async function mergePDFs(input: MergePDFsInput): Promise<MergePDFsOutput>
 
     // Load and copy pages from each PDF
     for (const pdfPath of input.inputPaths) {
-      const pdfBytes = await fs.readFile(pdfPath);
+      const pdfBytes = await Bun.file(pdfPath).arrayBuffer();
       const pdf = await PDFDocument.load(pdfBytes);
       const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
 
@@ -36,7 +35,7 @@ export async function mergePDFs(input: MergePDFsInput): Promise<MergePDFsOutput>
 
     // Save the merged PDF
     const mergedPdfBytes = await mergedPdf.save();
-    await fs.writeFile(input.outputPath, mergedPdfBytes);
+    await Bun.write(input.outputPath, mergedPdfBytes);
 
     return {
       success: true,

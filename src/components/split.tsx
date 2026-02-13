@@ -59,9 +59,9 @@ export function SplitUI() {
         case "splitAt":
           splitValue = parseInt(pagesInput()) || 0;
           if (splitValue < 1 || splitValue >= fl.pageCount()) {
-            fl.setStatus({ 
-              msg: `Split page must be between 1 and ${fl.pageCount() - 1}`, 
-              type: "error" 
+            fl.setStatus({
+              msg: `Split page must be between 1 and ${fl.pageCount() - 1}`,
+              type: "error",
             });
             fl.setIsProcessing(false);
             return;
@@ -105,7 +105,7 @@ export function SplitUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
+
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
@@ -113,7 +113,7 @@ export function SplitUI() {
         type: "list-item",
         onEnter: () => fl.selectFile(index),
       });
-      
+
       // Remove button
       nav.registerElement({
         id: `file-${index}-remove`,
@@ -182,7 +182,7 @@ export function SplitUI() {
       type: "button",
       onEnter: () =>
         openOutputFolder().catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         ),
     });
   });
@@ -235,11 +235,7 @@ export function SplitUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text
-              fg="#3498db"
-              attributes={TextAttributes.BOLD}
-              content={fl.selectedFile() ?? ""}
-            />
+            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
             <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
           </box>
         </box>
@@ -254,7 +250,13 @@ export function SplitUI() {
           onSelect={setSplitMode}
           focused={nav.isFocused("toggle-splitAt")}
         />
-        <Toggle label="Range" value="range" selected={splitMode()} onSelect={setSplitMode} focused={nav.isFocused("toggle-range")} />
+        <Toggle
+          label="Range"
+          value="range"
+          selected={splitMode()}
+          onSelect={setSplitMode}
+          focused={nav.isFocused("toggle-range")}
+        />
         <Toggle
           label="Every N Pages"
           value="every"
@@ -327,18 +329,21 @@ export function SplitUI() {
         <Button
           label="Add File"
           color={canAddFile() ? "green" : "gray"}
+          disabled={!canAddFile()}
           onClick={fl.addFile}
           focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}
+          disabled={!canClearAll()}
           onClick={clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Splitting..." : "Split"}
           color={canSplit() ? "cyan" : "gray"}
+          disabled={!canSplit()}
           onClick={handleSplit}
           focused={nav.isFocused("split-btn")}
         />

@@ -129,7 +129,7 @@ export function ProtectUI() {
       type: "button",
       onEnter: () =>
         openOutputFolder().catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         ),
     });
   });
@@ -182,11 +182,7 @@ export function ProtectUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text
-              fg="#3498db"
-              attributes={TextAttributes.BOLD}
-              content={fl.selectedFile() ?? ""}
-            />
+            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
           </box>
         </box>
       </Show>
@@ -206,16 +202,14 @@ export function ProtectUI() {
           value={ownerPassword}
           onInput={setOwnerPassword}
           placeholder="Leave empty to use user password"
-          focused={focusedInput() === "input-owner-password" || nav.isFocused("input-owner-password")}
+          focused={
+            focusedInput() === "input-owner-password" || nav.isFocused("input-owner-password")
+          }
           onFocus={() => setFocusedInput("input-owner-password")}
         />
       </box>
 
-      <box
-        marginTop={1}
-        paddingLeft={1}
-        flexShrink={0}
-      >
+      <box marginTop={1} paddingLeft={1} flexShrink={0}>
         <text fg="#95a5a6" content="Note: Requires qpdf to be installed" />
       </box>
 
@@ -231,18 +225,21 @@ export function ProtectUI() {
         <Button
           label="Add File"
           color={canAddFile() ? "green" : "gray"}
+          disabled={!canAddFile()}
           onClick={fl.addFile}
           focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}
+          disabled={!canClearAll()}
           onClick={clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Protecting..." : "Protect PDF"}
           color={canProtect() ? "cyan" : "gray"}
+          disabled={!canProtect()}
           onClick={handleProtect}
           focused={nav.isFocused("protect-btn")}
         />
