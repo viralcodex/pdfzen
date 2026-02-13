@@ -63,6 +63,8 @@ jobs:
 
       - name: Build TUI (Unix)
         if: matrix.platform != 'windows'
+        env:
+          NODE_ENV: production
         run: |
           mkdir -p dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}
           bun build --compile --minify --target=${{ matrix.bun_target }} \
@@ -71,6 +73,8 @@ jobs:
 
       - name: Build TUI (Windows)
         if: matrix.platform == 'windows'
+        env:
+          NODE_ENV: production
         run: |
           mkdir -p dist/pdfzen-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}
           bun build --compile --minify --target=${{ matrix.bun_target }} `
@@ -176,6 +180,8 @@ jobs:
           fi
 
       - name: Build Homebrew tarball
+        env:
+          NODE_ENV: production
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           RELEASE_DIR="dist/pdfzen-$VERSION"
