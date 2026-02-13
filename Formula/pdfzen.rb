@@ -4,8 +4,8 @@
 class Pdfzen < Formula
   desc "Terminal-based PDF toolkit for merge, split, compress, and more"
   homepage "https://github.com/viralcodex/pdfzen"
-  url "https://github.com/viralcodex/pdfzen/releases/download/v0.1.0/pdfzen-0.1.0.tar.gz"
-  sha256 "REPLACE_WITH_SHA256_FROM_BUILD"
+  url "https://github.com/viralcodex/pdfzen/releases/download/v0.1.6/pdfzen-0.1.6.tar.gz"
+  sha256 "428d5e030aaf6a4a4497e3c7e932d411cff1d0b6b22a068815305b4e1480382d"
   license "MIT"
 
   depends_on "python@3.11"
