@@ -53,7 +53,7 @@ export function PDFToImagesUI() {
           type: "success",
         });
         await openOutputFolder(outputDir).catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         );
       } else {
         fl.setStatus({ msg: res.error || "Unknown error", type: "error" });
@@ -149,7 +149,7 @@ export function PDFToImagesUI() {
       type: "button",
       onEnter: () =>
         openOutputFolder().catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         ),
     });
   });
@@ -202,11 +202,7 @@ export function PDFToImagesUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text
-              fg="#3498db"
-              attributes={TextAttributes.BOLD}
-              content={fl.selectedFile() ?? ""}
-            />
+            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
             <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
           </box>
         </box>
@@ -267,18 +263,21 @@ export function PDFToImagesUI() {
         <Button
           label="Add File"
           color={canAddFile() ? "green" : "gray"}
+          disabled={!canAddFile()}
           onClick={fl.addFile}
           focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}
+          disabled={!canClearAll()}
           onClick={fl.clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Converting..." : "Convert"}
           color={canConvert() ? "cyan" : "gray"}
+          disabled={!canConvert()}
           onClick={handleConvert}
           focused={nav.isFocused("convert-btn")}
         />

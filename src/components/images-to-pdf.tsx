@@ -143,7 +143,7 @@ export function ImagesToPDFUI() {
       type: "button",
       onEnter: () =>
         openOutputFolder().catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         ),
     });
   });
@@ -222,18 +222,21 @@ export function ImagesToPDFUI() {
         <Button
           label="Add Images"
           color={canAddFiles() ? "#5bef4e" : "gray"}
+          disabled={!canAddFiles()}
           onClick={fl.addFile}
           focused={nav.isFocused("add-files-btn")}
         />
         <Button
           label="Clear All"
           color={canClearAll() ? "#f3ae40" : "gray"}
+          disabled={!canClearAll()}
           onClick={fl.clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Converting..." : "Create PDF"}
           color={canConvert() ? "cyan" : "gray"}
+          disabled={!canConvert()}
           onClick={handleConvert}
           focused={nav.isFocused("convert-btn")}
         />

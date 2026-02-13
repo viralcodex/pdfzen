@@ -1,4 +1,4 @@
-import fs from "fs/promises";
+import { mkdir } from "fs/promises";
 import { backendPdfToImages } from "../utils/backend";
 import type { PDFToImagesInput, PDFToImagesOutput } from "../model/models";
 
@@ -12,7 +12,7 @@ export type { PDFToImagesInput, PDFToImagesOutput };
 export async function pdfToImages(input: PDFToImagesInput): Promise<PDFToImagesOutput> {
   try {
     // Ensure output directory exists
-    await fs.mkdir(input.outputDir, { recursive: true });
+    await mkdir(input.outputDir, { recursive: true });
 
     // Convert pages array to comma-separated string
     let pagesStr: string | undefined;

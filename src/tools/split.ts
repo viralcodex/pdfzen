@@ -1,6 +1,6 @@
 import { PDFDocument } from "pdf-lib";
-import fs from "fs/promises";
-import path from "path";
+import { mkdir } from "fs/promises";
+import { join, basename } from "path";
 import type { SplitPDFInput, SplitPDFOutput } from "../model/models";
 
 export type { SplitPDFInput, SplitPDFOutput };
@@ -12,22 +12,21 @@ export type { SplitPDFInput, SplitPDFOutput };
  */
 export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
   try {
-    const pdfBytes = await fs.readFile(input.inputPath);
+    const pdfBytes = await Bun.file(input.inputPath).arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const totalPages = pdfDoc.getPageCount();
     const outputFiles: string[] = [];
 
     // Ensure output directory exists
-    await fs.mkdir(input.outputDir, { recursive: true });
+    await mkdir(input.outputDir, { recursive: true });
 
-    const baseName = path.basename(input.inputPath, ".pdf");
+    const baseName = basename(input.inputPath, ".pdf");
 
     switch (input.splitMode) {
       case "splitAt": {
         // Split at a specific page - creates 2 files
-        const splitPage = typeof input.splitValue === "number" 
-          ? input.splitValue 
-          : (input.splitValue[0] ?? 1);
+        const splitPage =
+          typeof input.splitValue === "number" ? input.splitValue : (input.splitValue[0] ?? 1);
 
         if (splitPage < 1 || splitPage >= totalPages) {
           return {
@@ -44,8 +43,8 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
             const indices = Array.from({ length: splitPage }, (_, i) => i);
             const pages = await pdf.copyPages(pdfDoc, indices);
             pages.forEach((page) => pdf.addPage(page));
-            const filePath = path.join(input.outputDir, `${baseName}_pages_1_to_${splitPage}.pdf`);
-            await fs.writeFile(filePath, await pdf.save());
+            const filePath = join(input.outputDir, `${baseName}_pages_1_to_${splitPage}.pdf`);
+            await Bun.write(filePath, await pdf.save());
             return filePath;
           })(),
           // Second part: pages splitPage+1 to end
@@ -54,8 +53,11 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
             const indices = Array.from({ length: totalPages - splitPage }, (_, i) => splitPage + i);
             const pages = await pdf.copyPages(pdfDoc, indices);
             pages.forEach((page) => pdf.addPage(page));
-            const filePath = path.join(input.outputDir, `${baseName}_pages_${splitPage + 1}_to_${totalPages}.pdf`);
-            await fs.writeFile(filePath, await pdf.save());
+            const filePath = join(
+              input.outputDir,
+              `${baseName}_pages_${splitPage + 1}_to_${totalPages}.pdf`,
+            );
+            await Bun.write(filePath, await pdf.save());
             return filePath;
           })(),
         ]);
@@ -79,12 +81,12 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
 
         copiedPages.forEach((page) => newPdf.addPage(page));
 
-        const outputPath = path.join(
+        const outputPath = join(
           input.outputDir,
           `${baseName}_pages_${startPage}_to_${endPage}.pdf`,
         );
         const newPdfBytes = await newPdf.save();
-        await fs.writeFile(outputPath, newPdfBytes);
+        await Bun.write(outputPath, newPdfBytes);
         outputFiles.push(outputPath);
         break;
       }
@@ -102,9 +104,9 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
 
           copiedPages.forEach((page) => newPdf.addPage(page));
 
-          const outputPath = path.join(input.outputDir, `${baseName}_part_${fileIndex}.pdf`);
+          const outputPath = join(input.outputDir, `${baseName}_part_${fileIndex}.pdf`);
           const newPdfBytes = await newPdf.save();
-          await fs.writeFile(outputPath, newPdfBytes);
+          await Bun.write(outputPath, newPdfBytes);
           outputFiles.push(outputPath);
           fileIndex++;
         }

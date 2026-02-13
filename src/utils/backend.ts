@@ -1,6 +1,4 @@
-import { spawn } from "child_process";
-import path from "path";
-import fs from "fs";
+import { join, resolve } from "path";
 import type { BackendResult } from "../model/models";
 
 export type { BackendResult };
@@ -11,7 +9,6 @@ const BACKEND_PATH = path.join(BACKEND_DIR, "pdfzen_backend.py");
 
 // Security limits
 const MAX_TIMEOUT_MS = 120000; // 2 minutes max execution time
-const MAX_OUTPUT_SIZE = 10 * 1024 * 1024; // 10MB max output
 
 // Cache backend config to avoid repeated checks
 let cachedBackendConfig: { executable: string; args: string[] } | null = null;
@@ -34,7 +31,7 @@ function getBackendConfig(): { executable: string; args: string[] } {
   const venvPath = path.join(BACKEND_DIR, ".venv");
   let pythonPath: string;
 
-  if (fs.existsSync(venvPath)) {
+  if (venvExists) {
     if (process.platform === "win32") {
       pythonPath = path.join(venvPath, "Scripts", "python");
     } else {
@@ -50,7 +47,7 @@ function getBackendConfig(): { executable: string; args: string[] } {
 
 /**
  * Call the Python backend with the given command and arguments
- * Uses spawn with argument array to prevent command injection
+ * Uses Bun.spawn with argument array to prevent command injection
  * Sensitive data (passwords) passed via stdin to avoid exposure in process list
  */
 export async function callBackend(
@@ -82,45 +79,46 @@ export async function callBackend(
       timeout: MAX_TIMEOUT_MS,
     });
 
-    let stdout = "";
-    let stderr = "";
-    let outputSize = 0;
-
-    proc.stdout.on("data", (data: Buffer) => {
-      outputSize += data.length;
-      if (outputSize <= MAX_OUTPUT_SIZE) {
-        stdout += data.toString();
-      }
-    });
-
-    proc.stderr.on("data", (data: Buffer) => {
-      stderr += data.toString();
-    });
-
-    proc.on("close", (code) => {
-      try {
-        resolve(JSON.parse(stdout));
-      } catch {
-        resolve({
-          success: false,
-          error: stderr || stdout || `Process exited with code ${code}`,
-        });
-      }
-    });
-
-    proc.on("error", (err) => {
-      resolve({
-        success: false,
-        error: err.message || "Backend execution failed",
-      });
-    });
-
     // Send sensitive data via stdin (not visible in process list)
     if (sensitiveData && Object.keys(sensitiveData).length > 0) {
       proc.stdin.write(JSON.stringify(sensitiveData));
     }
     proc.stdin.end();
-  });
+
+    // Set up timeout
+    const timeoutPromise = new Promise<BackendResult>((resolve) => {
+      setTimeout(() => {
+        proc.kill();
+        resolve({
+          success: false,
+          error: `Process timed out after ${MAX_TIMEOUT_MS}ms`,
+        });
+      }, MAX_TIMEOUT_MS);
+    });
+
+    // Wait for process to complete
+    const processPromise = (async (): Promise<BackendResult> => {
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+      const exitCode = await proc.exited;
+
+      try {
+        return JSON.parse(stdout);
+      } catch {
+        return {
+          success: false,
+          error: stderr || stdout || `Process exited with code ${exitCode}`,
+        };
+      }
+    })();
+
+    return await Promise.race([processPromise, timeoutPromise]);
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Backend execution failed",
+    };
+  }
 }
 
 /**

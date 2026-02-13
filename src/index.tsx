@@ -56,14 +56,8 @@ render(() => {
       }
     }
   });
- 
   return (
-    <box
-      alignItems="center"
-      justifyContent="center"
-      flexGrow={1}
-      backgroundColor="#141414"
-    >
+    <box alignItems="center" justifyContent="center" flexGrow={1} backgroundColor="#141414">
       {selectedTool() === "" && (
         <box flexDirection="column" alignItems="center">
           <Hero />
@@ -71,10 +65,7 @@ render(() => {
         </box>
       )}
       {selectedTool() && (
-        <HeaderLayout
-          toolName={getToolName(selectedTool())}
-          onBack={() => setSelectedTool("")}
-        >
+        <HeaderLayout toolName={getToolName(selectedTool())} onBack={() => setSelectedTool("")}>
           <Dynamic component={toolComponents[selectedTool()]} />
         </HeaderLayout>
       )}

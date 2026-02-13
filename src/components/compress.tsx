@@ -64,7 +64,7 @@ export function CompressUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
+
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
@@ -72,7 +72,7 @@ export function CompressUI() {
         type: "list-item",
         onEnter: () => fl.selectFile(index),
       });
-      
+
       // Remove button
       nav.registerElement({
         id: `file-${index}-remove`,
@@ -117,7 +117,7 @@ export function CompressUI() {
       type: "button",
       onEnter: () =>
         openOutputFolder().catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         ),
     });
   });
@@ -171,11 +171,7 @@ export function CompressUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text
-              fg="#3498db"
-              attributes={TextAttributes.BOLD}
-              content={fl.selectedFile() ?? ""}
-            />
+            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
           </box>
         </box>
       </Show>
@@ -210,18 +206,21 @@ export function CompressUI() {
         <Button
           label="Add File"
           color={canAddFile() ? "green" : "gray"}
+          disabled={!canAddFile()}
           onClick={fl.addFile}
           focused={nav.isFocused("add-file-btn")}
         />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}
+          disabled={!canClearAll()}
           onClick={clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Compressing..." : "Compress"}
           color={canCompress() ? "cyan" : "gray"}
+          disabled={!canCompress()}
           onClick={handleCompress}
           focused={nav.isFocused("compress-btn")}
         />
