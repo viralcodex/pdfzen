@@ -1,9 +1,7 @@
-import { execFile } from "child_process";
-import { promisify } from "util";
-import fs from "fs/promises";
 import { PDFDocument } from "pdf-lib";
-import path from "path";
+import { join, basename } from "path";
 import { OUTPUT_DIR } from "../constants/constants";
+import { mkdir, stat } from "fs/promises";
 
 const openedFiles = new Set<string>(); // to track opened files
 const outputCache = new Map<string, string>(); // inputPath+tool -> outputPath
@@ -11,23 +9,23 @@ const outputCache = new Map<string, string>(); // inputPath+tool -> outputPath
 // Security limit for file size (100MB)
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
-const execFileAsync = promisify(execFile);
-
 const ensureOutputDir = async () => {
   try {
-    await fs.mkdir(OUTPUT_DIR, { recursive: true });
+    await mkdir(OUTPUT_DIR, { recursive: true });
   } catch (error) {
     console.warn("Could not create output directory:", error);
   }
 };
 
 export const chunkArray = (array: Array<any>, chunkSize: number) => {
-  return Array.from({ length: Math.ceil(array.length / chunkSize)}, (_, i) => array.slice(i * chunkSize, i * chunkSize + chunkSize));
+  return Array.from({ length: Math.ceil(array.length / chunkSize) }, (_, i) =>
+    array.slice(i * chunkSize, i * chunkSize + chunkSize),
+  );
 };
 
 export const getOutputPath = async (prefix: string, inputFile?: string): Promise<string> => {
   await ensureOutputDir();
-  const baseName = inputFile ? path.basename(inputFile, ".pdf") : "";
+  const baseName = inputFile ? basename(inputFile, ".pdf") : "";
 
   if (inputFile) {
     const cacheKey = `${inputFile}:${prefix}`;
@@ -36,7 +34,7 @@ export const getOutputPath = async (prefix: string, inputFile?: string): Promise
   }
 
   const fileName = baseName ? `${baseName}-${prefix}.pdf` : `${prefix}-${Date.now()}.pdf`;
-  const outputPath = path.join(OUTPUT_DIR, fileName);
+  const outputPath = join(OUTPUT_DIR, fileName);
 
   if (inputFile) outputCache.set(`${inputFile}:${prefix}`, outputPath);
   return outputPath;
@@ -45,8 +43,8 @@ export const getOutputPath = async (prefix: string, inputFile?: string): Promise
 export const getOutputDir = async (prefix: string): Promise<string> => {
   await ensureOutputDir();
   const dirName = `${prefix}-${Date.now()}`;
-  const dirPath = path.join(OUTPUT_DIR, dirName);
-  await fs.mkdir(dirPath, { recursive: true });
+  const dirPath = join(OUTPUT_DIR, dirName);
+  await mkdir(dirPath, { recursive: true });
   return dirPath;
 };
 
@@ -56,13 +54,14 @@ export const openOutputFolder = async (folderPath?: string) => {
 
   try {
     // Verify folder exists before trying to open
-    const stats = await fs.stat(targetPath);
+    const stats = await stat(targetPath);
     if (!stats.isDirectory()) {
       throw new Error("Output path is not a directory");
     }
-    // Use execFile with argument array to prevent command injection
+    // Use Bun.spawn with argument array to prevent command injection
     const { cmd, args } = getPlatformOpenCommand(targetPath);
-    await execFileAsync(cmd, args);
+    const proc = Bun.spawn([cmd, ...args]);
+    await proc.exited;
   } catch (error) {
     console.error("Failed to open output folder:", targetPath, error);
     throw error;
@@ -73,9 +72,10 @@ export const openFile = async (filePath: string) => {
   try {
     if (openedFiles.has(filePath)) return; // prevent reopening
     openedFiles.add(filePath);
-    // Use execFile with argument array to prevent command injection
+    // Use Bun.spawn with argument array to prevent command injection
     const { cmd, args } = getPlatformOpenCommand(filePath);
-    await execFileAsync(cmd, args);
+    const proc = Bun.spawn([cmd, ...args]);
+    await proc.exited;
   } catch (error) {
     console.warn("Could not auto-open file:", error);
   }
@@ -85,11 +85,13 @@ export const validatePdfFile = async (
   filePath: string,
 ): Promise<{ valid: boolean; error?: string }> => {
   try {
-    const stats = await fs.stat(filePath);
-    if (!stats.isFile()) return { valid: false, error: "Path is not a file" };
-    if (!filePath.toLowerCase().endsWith(".pdf")) return { valid: false, error: "File must be a PDF" };
+    const file = Bun.file(filePath);
+    const exists = await file.exists();
+    if (!exists) return { valid: false, error: "File not found" };
+    if (!filePath.toLowerCase().endsWith(".pdf"))
+      return { valid: false, error: "File must be a PDF" };
     // Check file size limit
-    if (stats.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_FILE_SIZE) {
       return { valid: false, error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
     }
     return { valid: true };
@@ -102,14 +104,15 @@ export const validateImageFile = async (
   filePath: string,
 ): Promise<{ valid: boolean; error?: string }> => {
   try {
-    const stats = await fs.stat(filePath);
-    if (!stats.isFile()) return { valid: false, error: "Path is not a file" };
+    const file = Bun.file(filePath);
+    const exists = await file.exists();
+    if (!exists) return { valid: false, error: "File not found" };
     const ext = filePath.toLowerCase();
-    if ([".png", ".jpg", ".jpeg"].every(e => !ext.endsWith(e))) {
+    if ([".png", ".jpg", ".jpeg"].every((e) => !ext.endsWith(e))) {
       return { valid: false, error: "File must be PNG, JPG, or JPEG" };
     }
     // Check file size limit
-    if (stats.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_FILE_SIZE) {
       return { valid: false, error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
     }
     return { valid: true };
@@ -144,9 +147,9 @@ export const closeFileTracking = (filePath: string) => {
 
 export const unescapePath = (path: string): string => path.replace(/\\(.)/g, "$1");
 
-export const getPageCount = async (path: string): Promise<number> => {
+export const getPageCount = async (filePath: string): Promise<number> => {
   try {
-    const pdfBytes = await fs.readFile(path);
+    const pdfBytes = await Bun.file(filePath).arrayBuffer();
     const pdfDoc = await PDFDocument.load(pdfBytes);
     return pdfDoc.getPageCount();
   } catch {

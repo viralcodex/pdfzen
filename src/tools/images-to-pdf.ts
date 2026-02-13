@@ -56,7 +56,7 @@ export async function imagesToPDF(input: ImagesToPDFInput): Promise<ImagesToPDFO
  */
 function isSupportedImage(filePath: string): boolean {
   const ext = filePath.toLowerCase();
-  return [".png", ".jpg", ".jpeg"].some(e => ext.endsWith(e));
+  return [".png", ".jpg", ".jpeg"].some((e) => ext.endsWith(e));
 }
 
 /**

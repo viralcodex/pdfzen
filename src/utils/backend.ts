@@ -1,17 +1,14 @@
-import { spawn } from "child_process";
-import path from "path";
-import fs from "fs";
+import { join, resolve } from "path";
 import type { BackendResult } from "../model/models";
 
 export type { BackendResult };
 
-// Path to Python backend
-const BACKEND_DIR = path.resolve(__dirname, "../../backend");
-const BACKEND_PATH = path.join(BACKEND_DIR, "pdfzen_backend.py");
+// Path to Python backend (using import.meta.dir for Bun)
+const BACKEND_DIR = resolve(import.meta.dir, "../../backend");
+const BACKEND_PATH = join(BACKEND_DIR, "pdfzen_backend.py");
 
 // Security limits
 const MAX_TIMEOUT_MS = 120000; // 2 minutes max execution time
-const MAX_OUTPUT_SIZE = 10 * 1024 * 1024; // 10MB max output
 
 // Cache Python path to avoid repeated fs checks
 let cachedPythonPath: string | null = null;
@@ -19,16 +16,17 @@ let cachedPythonPath: string | null = null;
 /**
  * Get the Python executable path - prefer venv if it exists
  */
-function getPythonPath(): string {
+async function getPythonPath(): Promise<string> {
   if (cachedPythonPath) return cachedPythonPath;
 
-  const venvPath = path.join(BACKEND_DIR, ".venv");
+  const venvPath = join(BACKEND_DIR, ".venv");
+  const venvExists = await Bun.file(venvPath).exists();
 
-  if (fs.existsSync(venvPath)) {
+  if (venvExists) {
     if (process.platform === "win32") {
-      cachedPythonPath = path.join(venvPath, "Scripts", "python");
+      cachedPythonPath = join(venvPath, "Scripts", "python");
     } else {
-      cachedPythonPath = path.join(venvPath, "bin", "python");
+      cachedPythonPath = join(venvPath, "bin", "python");
     }
   } else {
     // Fallback to system Python
@@ -40,7 +38,7 @@ function getPythonPath(): string {
 
 /**
  * Call the Python backend with the given command and arguments
- * Uses spawn with argument array to prevent command injection
+ * Uses Bun.spawn with argument array to prevent command injection
  * Sensitive data (passwords) passed via stdin to avoid exposure in process list
  */
 export async function callBackend(
@@ -48,7 +46,7 @@ export async function callBackend(
   args: Record<string, any>,
   sensitiveData?: Record<string, string>,
 ): Promise<BackendResult> {
-  return new Promise((resolve) => {
+  try {
     // Build command line arguments as array (safe from injection)
     const argsList: string[] = [BACKEND_PATH, command];
 
@@ -65,43 +63,12 @@ export async function callBackend(
       argsList.push("--stdin-secrets");
     }
 
-    const pythonPath = getPythonPath();
-    const proc = spawn(pythonPath, argsList, {
-      stdio: ["pipe", "pipe", "pipe"],
-      timeout: MAX_TIMEOUT_MS,
-    });
+    const pythonPath = await getPythonPath();
 
-    let stdout = "";
-    let stderr = "";
-    let outputSize = 0;
-
-    proc.stdout.on("data", (data: Buffer) => {
-      outputSize += data.length;
-      if (outputSize <= MAX_OUTPUT_SIZE) {
-        stdout += data.toString();
-      }
-    });
-
-    proc.stderr.on("data", (data: Buffer) => {
-      stderr += data.toString();
-    });
-
-    proc.on("close", (code) => {
-      try {
-        resolve(JSON.parse(stdout));
-      } catch {
-        resolve({
-          success: false,
-          error: stderr || stdout || `Process exited with code ${code}`,
-        });
-      }
-    });
-
-    proc.on("error", (err) => {
-      resolve({
-        success: false,
-        error: err.message || "Backend execution failed",
-      });
+    const proc = Bun.spawn([pythonPath, ...argsList], {
+      stdin: "pipe",
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
     // Send sensitive data via stdin (not visible in process list)
@@ -109,7 +76,41 @@ export async function callBackend(
       proc.stdin.write(JSON.stringify(sensitiveData));
     }
     proc.stdin.end();
-  });
+
+    // Set up timeout
+    const timeoutPromise = new Promise<BackendResult>((resolve) => {
+      setTimeout(() => {
+        proc.kill();
+        resolve({
+          success: false,
+          error: `Process timed out after ${MAX_TIMEOUT_MS}ms`,
+        });
+      }, MAX_TIMEOUT_MS);
+    });
+
+    // Wait for process to complete
+    const processPromise = (async (): Promise<BackendResult> => {
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+      const exitCode = await proc.exited;
+
+      try {
+        return JSON.parse(stdout);
+      } catch {
+        return {
+          success: false,
+          error: stderr || stdout || `Process exited with code ${exitCode}`,
+        };
+      }
+    })();
+
+    return await Promise.race([processPromise, timeoutPromise]);
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Backend execution failed",
+    };
+  }
 }
 
 /**

@@ -60,7 +60,7 @@ export async function protectPDF(input: ProtectPDFInput): Promise<ProtectPDFOutp
 export async function unprotectPDF(
   inputPath: string,
   outputPath: string,
-  password: string
+  password: string,
 ): Promise<ProtectPDFOutput> {
   try {
     // Pass password via stdin for security (not visible in process list)
@@ -70,7 +70,7 @@ export async function unprotectPDF(
         input: inputPath,
         output: outputPath,
       },
-      { password }  // sensitiveData - sent via stdin
+      { password }, // sensitiveData - sent via stdin
     );
 
     if (result.success) {

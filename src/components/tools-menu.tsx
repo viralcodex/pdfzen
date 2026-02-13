@@ -2,7 +2,7 @@ import { useTerminalDimensions } from "@opentui/solid";
 import { EmptyBorderChars, toolsMenu } from "../constants/constants";
 import { TextAttributes } from "@opentui/core";
 import { chunkArray } from "../utils/utils";
-import { createEffect, onCleanup } from "solid-js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 
 export function ToolsMenu(props: {
@@ -12,6 +12,7 @@ export function ToolsMenu(props: {
   const { selectedTool, selectTool } = props;
   const nav = useKeyboardNav();
   const terminalDimensions = useTerminalDimensions();
+  const [hoveredTool, setHoveredTool] = createSignal<string | null>(null);
   const isCompact = () => terminalDimensions().width < 95;
   const columns = () => (isCompact() ? 2 : 4);
   const gap = () => (isCompact() ? 2 : 2);
@@ -41,12 +42,7 @@ export function ToolsMenu(props: {
   });
 
   return (
-    <box
-      alignItems="center"
-      justifyContent="center"
-      flexDirection="column"
-      rowGap={1}
-    >
+    <box alignItems="center" justifyContent="center" flexDirection="column" rowGap={1}>
       {rows().map((row) => (
         <box
           alignItems="center"
@@ -58,6 +54,8 @@ export function ToolsMenu(props: {
           {row.map((tool) => {
             const isSelected = () => selectedTool() === tool.command;
             const isFocused = () => nav.isFocused(`tool-${tool.command}`);
+            const isHovered = () => hoveredTool() === tool.command;
+            const isHighlighted = () => isFocused() || isHovered();
             return (
               <box
                 alignItems="center"
@@ -66,19 +64,21 @@ export function ToolsMenu(props: {
                 paddingRight={3}
                 paddingTop={1}
                 onMouseDown={() => selectTool(tool.command)}
+                onMouseOver={() => setHoveredTool(tool.command)}
+                onMouseOut={() => setHoveredTool(null)}
                 width={buttonWidth()}
                 backgroundColor={"#2c3e50"}
                 border={["bottom"]}
-                borderColor={isFocused() ? "#68ffc0" : "#e74c3c"}
+                borderColor={isHighlighted() ? "#68ffc0" : "#e74c3c"}
                 borderStyle="heavy"
                 customBorderChars={{
                   ...EmptyBorderChars,
-                  horizontal: isFocused() ? "▄" : "▂",
+                  horizontal: isHighlighted() ? "▄" : "▂",
                 }}
               >
                 <text
-                  fg={isFocused() ? "#32d692" : isSelected() ? "#ffffff" : "#e2e8f0"}
-                  attributes={isSelected() || isFocused() ? TextAttributes.BOLD : undefined}
+                  fg={isHighlighted() ? "#32d692" : isSelected() ? "#ffffff" : "#e2e8f0"}
+                  attributes={isSelected() || isHighlighted() ? TextAttributes.BOLD : undefined}
                   content={String(tool.name)}
                 />
               </box>

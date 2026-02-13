@@ -44,7 +44,7 @@ export function MergeUI() {
   // Register keyboard navigation elements
   createEffect(() => {
     nav.clearElements();
-    
+
     // Register file list items and their action buttons
     fl.files().forEach((_, index) => {
       // Move up button
@@ -54,7 +54,7 @@ export function MergeUI() {
         onEnter: () => fl.moveFile(index, "up"),
         canFocus: () => index > 0,
       });
-      
+
       // Move down button
       nav.registerElement({
         id: `file-${index}-down`,
@@ -62,7 +62,7 @@ export function MergeUI() {
         onEnter: () => fl.moveFile(index, "down"),
         canFocus: () => index < fl.fileCount() - 1,
       });
-      
+
       // Remove button
       nav.registerElement({
         id: `file-${index}-remove`,
@@ -107,7 +107,7 @@ export function MergeUI() {
       type: "button",
       onEnter: () =>
         openOutputFolder().catch((_) =>
-          fl.setStatus({ msg: "Failed to open folder", type: "error" })
+          fl.setStatus({ msg: "Failed to open folder", type: "error" }),
         ),
     });
   });
@@ -161,18 +161,21 @@ export function MergeUI() {
         <Button
           label="Add Files"
           color={canAddFiles() ? "#5bef4e" : "gray"}
+          disabled={!canAddFiles()}
           onClick={fl.addFile}
           focused={nav.isFocused("add-files-btn")}
         />
         <Button
           label="Clear All"
           color={canClearAll() ? "#f3ae40" : "gray"}
+          disabled={!canClearAll()}
           onClick={fl.clearAll}
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
           label={fl.isProcessing() ? "Merging..." : "Merge"}
           color={canMerge() ? "cyan" : "gray"}
+          disabled={!canMerge()}
           onClick={handleMerge}
           focused={nav.isFocused("merge-btn")}
         />
