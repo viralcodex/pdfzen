@@ -74,9 +74,3 @@ When navigating file lists, you can tab through:
 
 - Click on the file list area to open file picker
 - Drag & drop files into the terminal
-
-## Debug Panel
-
----
-
-This project was created using `bun create tui`. [create-tui](https://git.new/create-tui) is the easiest way to get started with OpenTUI.
