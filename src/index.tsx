@@ -11,6 +11,7 @@ import { DeleteUI } from "./components/delete";
 import { PDFToImagesUI } from "./components/pdf-to-images";
 import { ImagesToPDFUI } from "./components/images-to-pdf";
 import { ProtectUI } from "./components/protect";
+import { DecryptUI } from "./components/decrypt";
 import { toolsMenu } from "./constants/constants";
 import Hero from "./components/hero";
 
@@ -24,6 +25,7 @@ const toolComponents: Record<string, () => any> = {
   pdfToImages: PDFToImagesUI,
   imagesToPDF: ImagesToPDFUI,
   protect: ProtectUI,
+  decrypt: DecryptUI,
 };
 
 render(() => {
