@@ -1,7 +1,7 @@
 <img width="1408" height="600" alt="image" src="https://github.com/user-attachments/assets/7f9d7b7c-756a-493f-83ea-6c6025335714" />
 
 <p align="center">
-  <em>A terminal-based PDF utility tool for merging, splitting, compressing, and rotating PDFs.</em>
+  <em>A terminal-based PDF utility tool for merging, splitting, compressing, rotating, encrypting, and decrypting PDFs.</em>
 </p>
 
 ## Installation
@@ -44,6 +44,7 @@ bun dev:backend # Setup backend only
 - **Rotate PDF**: Rotate pages in a PDF document
 - **Delete Pages**: Remove specific pages from a PDF
 - **Protect PDF**: Add password protection and permissions
+- **Decrypt PDF**: Remove password protection from PDFs
 - **PDF to Images**: Convert PDF pages to PNG/JPG images
 - **Images to PDF**: Combine images into a single PDF
 
@@ -71,8 +72,8 @@ When navigating file lists, you can tab through:
 
 ### Adding Files
 
-- Drag & drop PDF files into the terminal
-- Enter file path manually and press Enter or click "Add Files"
+- Click on the file list area to open file picker
+- Drag & drop files into the terminal
 
 ## Debug Panel
 
