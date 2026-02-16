@@ -10,7 +10,6 @@ const BACKEND_PATH = join(BACKEND_DIR, "pdfzen_backend.py");
 // Security limits
 const MAX_TIMEOUT_MS = 120000; // 2 minutes max execution time
 
-// Cache Python path to avoid repeated fs checks
 let cachedPythonPath: string | null = null;
 
 /**
@@ -47,7 +46,6 @@ export async function callBackend(
   sensitiveData?: Record<string, string>,
 ): Promise<BackendResult> {
   try {
-    // Build command line arguments as array (safe from injection)
     const argsList: string[] = [BACKEND_PATH, command];
 
     for (const [key, value] of Object.entries(args)) {

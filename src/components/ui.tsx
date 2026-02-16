@@ -4,6 +4,7 @@ import { Show, Index, createSignal } from "solid-js";
 import type { JSX, Accessor, Setter } from "solid-js";
 import { EmptyBorderChars } from "../constants/constants";
 import type { StatusType } from "../model/models";
+import { handleFileExplorer } from "../utils/utils";
 
 export type { StatusType };
 
@@ -200,10 +201,12 @@ export function StatusBar(props: { message: string; type: StatusType }) {
 // ============ File List Component ============
 interface FileListProps {
   files: Accessor<string[]>;
+  fileType: "pdf" | "image";
   selectedIndex: Accessor<number | null>;
   onSelect: (index: number) => void;
   onRemove: (index: number) => void;
   onMove?: (index: number, direction: "up" | "down") => void;
+  onFilesSelected?: (files: string[]) => void;
   emptyText?: string;
   showReorder?: boolean;
   focusedIndex?: () => number | null;
@@ -227,6 +230,12 @@ export function FileList(props: FileListProps) {
       width="100%"
       flexGrow={1}
       minHeight={0}
+      onMouseDown={async (e) => {
+        const files = await handleFileExplorer(e, props.fileType);
+        if (files.length > 0) {
+          props.onFilesSelected?.(files);
+        }
+      }}
     >
       <Show
         when={fileCount() > 0}
@@ -241,7 +250,8 @@ export function FileList(props: FileListProps) {
             <text
               fg="#7f8c8d"
               content={
-                props.emptyText || "No files added yet. Drag & drop PDFs or enter path below."
+                props.emptyText ||
+                "No files added yet. Click or drag files here to add."
               }
             />
           </box>
@@ -260,12 +270,15 @@ export function FileList(props: FileListProps) {
               const canMoveUp = () => index > 0;
               const canMoveDown = () => index < fileCount() - 1;
               const isUpHighlighted = () =>
-                canMoveUp() && (props.focusedButton?.() === `file-${index}-up` || upHovered());
+                canMoveUp() &&
+                (props.focusedButton?.() === `file-${index}-up` || upHovered());
               const isDownHighlighted = () =>
                 canMoveDown() &&
-                (props.focusedButton?.() === `file-${index}-down` || downHovered());
+                (props.focusedButton?.() === `file-${index}-down` ||
+                  downHovered());
               const isRemoveHighlighted = () =>
-                props.focusedButton?.() === `file-${index}-remove` || removeHovered();
+                props.focusedButton?.() === `file-${index}-remove` ||
+                removeHovered();
               return (
                 <box
                   flexDirection="row"
@@ -286,7 +299,13 @@ export function FileList(props: FileListProps) {
                   }}
                 >
                   <text
-                    fg={isRowHighlighted() ? "#68ffc0" : isSelected() ? "cyan" : "yellow"}
+                    fg={
+                      isRowHighlighted()
+                        ? "#68ffc0"
+                        : isSelected()
+                          ? "cyan"
+                          : "yellow"
+                    }
                     minWidth={3}
                     content={`${index + 1}.`}
                   />
@@ -295,16 +314,24 @@ export function FileList(props: FileListProps) {
                     flexGrow={1}
                     flexShrink={1}
                     content={String(file())}
-                    attributes={isRowHighlighted() ? TextAttributes.BOLD : undefined}
+                    attributes={
+                      isRowHighlighted() ? TextAttributes.BOLD : undefined
+                    }
                   />
                   <box flexDirection="row" columnGap={1} flexShrink={0}>
                     <Show when={props.showReorder && props.onMove}>
                       <box
                         border={["bottom"]}
                         borderColor={
-                          isUpHighlighted() ? "#68ffc0" : canMoveUp() ? "#3498db" : "#34495e"
+                          isUpHighlighted()
+                            ? "#68ffc0"
+                            : canMoveUp()
+                              ? "#3498db"
+                              : "#34495e"
                         }
-                        backgroundColor={isUpHighlighted() ? "#1a4a3a" : "#2c3e50"}
+                        backgroundColor={
+                          isUpHighlighted() ? "#1a4a3a" : "#2c3e50"
+                        }
                         customBorderChars={{
                           ...EmptyBorderChars,
                           horizontal: isUpHighlighted() ? "▄" : "▂",
@@ -325,17 +352,31 @@ export function FileList(props: FileListProps) {
                         alignItems="center"
                       >
                         <text
-                          fg={isUpHighlighted() ? "#68ffc0" : canMoveUp() ? "#3498db" : "#7f8c8d"}
-                          attributes={isUpHighlighted() ? TextAttributes.BOLD : undefined}
+                          fg={
+                            isUpHighlighted()
+                              ? "#68ffc0"
+                              : canMoveUp()
+                                ? "#3498db"
+                                : "#7f8c8d"
+                          }
+                          attributes={
+                            isUpHighlighted() ? TextAttributes.BOLD : undefined
+                          }
                           content={"↑"}
                         />
                       </box>
                       <box
                         border={["bottom"]}
                         borderColor={
-                          isDownHighlighted() ? "#68ffc0" : canMoveDown() ? "#3498db" : "#34495e"
+                          isDownHighlighted()
+                            ? "#68ffc0"
+                            : canMoveDown()
+                              ? "#3498db"
+                              : "#34495e"
                         }
-                        backgroundColor={isDownHighlighted() ? "#1a4a3a" : "#2c3e50"}
+                        backgroundColor={
+                          isDownHighlighted() ? "#1a4a3a" : "#2c3e50"
+                        }
                         customBorderChars={{
                           ...EmptyBorderChars,
                           horizontal: isDownHighlighted() ? "▄" : "▂",
@@ -357,17 +398,29 @@ export function FileList(props: FileListProps) {
                       >
                         <text
                           fg={
-                            isDownHighlighted() ? "#68ffc0" : canMoveDown() ? "#3498db" : "#7f8c8d"
+                            isDownHighlighted()
+                              ? "#68ffc0"
+                              : canMoveDown()
+                                ? "#3498db"
+                                : "#7f8c8d"
                           }
-                          attributes={isDownHighlighted() ? TextAttributes.BOLD : undefined}
+                          attributes={
+                            isDownHighlighted()
+                              ? TextAttributes.BOLD
+                              : undefined
+                          }
                           content={"↓"}
                         />
                       </box>
                     </Show>
                     <box
                       border={["bottom"]}
-                      borderColor={isRemoveHighlighted() ? "#ff6b6b" : "#e74c3c"}
-                      backgroundColor={isRemoveHighlighted() ? "#5a1a1a" : "#3a1a1a"}
+                      borderColor={
+                        isRemoveHighlighted() ? "#ff6b6b" : "#e74c3c"
+                      }
+                      backgroundColor={
+                        isRemoveHighlighted() ? "#5a1a1a" : "#3a1a1a"
+                      }
                       customBorderChars={{
                         ...EmptyBorderChars,
                         horizontal: isRemoveHighlighted() ? "▄" : "▂",
@@ -405,54 +458,6 @@ export function FileList(props: FileListProps) {
 }
 
 // ============ Input Components ============
-interface PathInputProps {
-  value: Accessor<string>;
-  onInput: Setter<string>;
-  onSubmit: () => void;
-  focused: boolean;
-  onFocus: () => void;
-}
-
-export function PathInput(props: PathInputProps) {
-  const borderColor = () => (props.focused ? "#68ffc0" : "#34495e");
-  return (
-    <box
-      flexDirection="column"
-      marginTop={1}
-      marginBottom={1}
-      alignItems="flex-start"
-      flexShrink={0}
-    >
-      <text fg="#ecf0f1" attributes={TextAttributes.BOLD} content={"Path:"} />
-      <box
-        border={["left"]}
-        borderStyle="heavy"
-        borderColor={borderColor()}
-        customBorderChars={{
-          ...EmptyBorderChars,
-          vertical: props.focused ? "▐" : "▌",
-          bottomLeft: "╹",
-        }}
-        backgroundColor="#1a1a1a"
-        paddingTop={1}
-        paddingBottom={2}
-        paddingLeft={1}
-        paddingRight={1}
-        width="100%"
-      >
-        <input
-          focused={props.focused}
-          value={props.value()}
-          onInput={props.onInput}
-          onSubmit={props.onSubmit}
-          placeholder="/path/to/file.pdf"
-          onMouseDown={props.onFocus}
-        />
-      </box>
-    </box>
-  );
-}
-
 interface TextInputProps {
   label: string;
   value: Accessor<string>;
@@ -460,6 +465,7 @@ interface TextInputProps {
   placeholder?: string;
   focused: boolean;
   onFocus: () => void;
+  onSubmit?: () => void;
   // Layout customization
   flexGrow?: number;
   marginTop?: number;
@@ -498,6 +504,7 @@ export function TextInput(props: TextInputProps) {
           focused={props.focused}
           value={props.value()}
           onInput={props.onInput}
+          onSubmit={props.onSubmit}
           placeholder={props.placeholder}
           onMouseDown={props.onFocus}
         />
@@ -505,3 +512,5 @@ export function TextInput(props: TextInputProps) {
     </box>
   );
 }
+
+

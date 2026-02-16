@@ -5,7 +5,6 @@ import {
   ToolContainer,
   Label,
   FileList,
-  PathInput,
   ButtonRow,
   Button,
   StatusBar,
@@ -33,7 +32,6 @@ export function DeleteUI() {
     const pages = parsePagesInput();
     return file !== null && pages.length > 0 && !fl.isProcessing();
   });
-  const canAddFile = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
 
   const clearAll = () => {
@@ -108,22 +106,7 @@ export function DeleteUI() {
     // Register pages input
     nav.registerElement({ id: "input-pages", type: "input" });
 
-    // Register path input
-    nav.registerElement({
-      id: "path-input",
-      type: "input",
-      onEnter: () => {
-        if (canAddFile()) fl.addFile();
-      },
-    });
-
     // Register buttons
-    nav.registerElement({
-      id: "add-file-btn",
-      type: "button",
-      onEnter: () => fl.addFile(),
-      canFocus: () => canAddFile(),
-    });
     nav.registerElement({
       id: "clear-all-btn",
       type: "button",
@@ -166,9 +149,15 @@ export function DeleteUI() {
       <Label text="Files" count={fl.fileCount()} />
       <FileList
         files={fl.files}
+        fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
         onRemove={fl.removeFile}
+        onFilesSelected={async (paths) => {
+          for (const path of paths) {
+            await fl.addFileToList(path);
+          }
+        }}
         focusedIndex={() => {
           const focusId = nav.getFocusedId();
           if (focusId && focusId.startsWith("file-")) {
@@ -209,22 +198,7 @@ export function DeleteUI() {
         onFocus={() => setFocusedInput("input-pages")}
       />
 
-      <PathInput
-        value={fl.inputPath}
-        onInput={fl.setInputPath}
-        onSubmit={fl.addFile}
-        focused={focusedInput() === "path-input" || nav.isFocused("path-input")}
-        onFocus={() => setFocusedInput("path-input")}
-      />
-
       <ButtonRow>
-        <Button
-          label="Add File"
-          color={canAddFile() ? "green" : "gray"}
-          disabled={!canAddFile()}
-          onClick={fl.addFile}
-          focused={nav.isFocused("add-file-btn")}
-        />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}

@@ -5,7 +5,6 @@ import {
   ToolContainer,
   Label,
   FileList,
-  PathInput,
   ButtonRow,
   Button,
   StatusBar,
@@ -21,10 +20,8 @@ export function ImagesToPDFUI() {
   const fl = useFileList({ acceptImages: true });
   const nav = useKeyboardNav();
   const [pageSize, setPageSize] = createSignal<PageSize>("fit");
-  const [inputFocused, setInputFocused] = createSignal(false);
 
   const canConvert = () => fl.fileCount() >= 1 && !fl.isProcessing();
-  const canAddFiles = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
 
   const handleConvert = async () => {
@@ -107,23 +104,7 @@ export function ImagesToPDFUI() {
       onEnter: () => setPageSize("letter"),
     });
 
-    // Register path input
-    nav.registerElement({
-      id: "path-input",
-      type: "input",
-      onEnter: () => {
-        if (canAddFiles()) fl.addFile();
-      },
-    });
-
     // Register buttons
-    nav.registerElement({
-      id: "add-files-btn",
-      type: "button",
-      onEnter: () => fl.addFile(),
-      canFocus: () => canAddFiles(),
-    });
-
     nav.registerElement({
       id: "clear-all-btn",
       type: "button",
@@ -148,18 +129,6 @@ export function ImagesToPDFUI() {
     });
   });
 
-  // Track input focus mode
-  createEffect(() => {
-    nav.setIsInputMode(inputFocused());
-  });
-
-  // Sync back: reset inputFocused when nav exits input mode (Tab/Escape)
-  createEffect(() => {
-    if (!nav.isInputMode()) {
-      setInputFocused(false);
-    }
-  });
-
   onCleanup(() => {
     nav.clearElements();
   });
@@ -169,10 +138,16 @@ export function ImagesToPDFUI() {
       <Label text="Images" count={fl.fileCount()} />
       <FileList
         files={fl.files}
+        fileType="image"
         selectedIndex={() => null}
         onSelect={() => {}}
         onRemove={fl.removeFile}
         onMove={fl.moveFile}
+        onFilesSelected={async (paths) => {
+          for (const path of paths) {
+            await fl.addFileToList(path);
+          }
+        }}
         showReorder={true}
         focusedIndex={() => {
           const focusId = nav.getFocusedId();
@@ -210,22 +185,7 @@ export function ImagesToPDFUI() {
         />
       </ToggleRow>
 
-      <PathInput
-        value={fl.inputPath}
-        onInput={fl.setInputPath}
-        onSubmit={fl.addFile}
-        focused={inputFocused() || nav.isFocused("path-input")}
-        onFocus={() => setInputFocused(true)}
-      />
-
       <ButtonRow>
-        <Button
-          label="Add Images"
-          color={canAddFiles() ? "#5bef4e" : "gray"}
-          disabled={!canAddFiles()}
-          onClick={fl.addFile}
-          focused={nav.isFocused("add-files-btn")}
-        />
         <Button
           label="Clear All"
           color={canClearAll() ? "#f3ae40" : "gray"}

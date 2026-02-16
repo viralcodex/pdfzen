@@ -129,6 +129,7 @@ export function useFileList(options: FileListOptions = {}) {
     setStatus({ msg: "Ready", type: "info" });
   };
 
+  //main hook to drag and drop files into the app
   usePaste(async (event) => {
     await addFileToList(event.text, true);
   });
