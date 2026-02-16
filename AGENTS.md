@@ -4,6 +4,9 @@
 - Always have the SolidJS as your reference for this project as we are working with SolidJS.
 - We are using Bun as the runtime for the entire project.
 
+## BUN
+- Use the bun skills in .agents/skills/bun present there for any reference of how to work on the codebase related to bun.
+
 ## OPENTUI
 
 - Either use this link: https://opentui.com/docs/getting-started/ for docs

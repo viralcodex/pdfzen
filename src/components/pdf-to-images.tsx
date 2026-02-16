@@ -5,7 +5,6 @@ import {
   ToolContainer,
   Label,
   FileList,
-  PathInput,
   ButtonRow,
   Button,
   StatusBar,
@@ -24,10 +23,8 @@ export function PDFToImagesUI() {
   const nav = useKeyboardNav();
   const [format, setFormat] = createSignal<ImageFormat>("png");
   const [dpi, setDpi] = createSignal<DPIOption>(150);
-  const [inputFocused, setInputFocused] = createSignal(false);
 
   const canConvert = () => fl.selectedFile() !== null && !fl.isProcessing();
-  const canAddFile = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
 
   const handleConvert = async () => {
@@ -116,22 +113,7 @@ export function PDFToImagesUI() {
       onEnter: () => setDpi(300),
     });
 
-    // Register path input
-    nav.registerElement({
-      id: "path-input",
-      type: "input",
-      onEnter: () => {
-        if (canAddFile()) fl.addFile();
-      },
-    });
-
     // Register buttons
-    nav.registerElement({
-      id: "add-file-btn",
-      type: "button",
-      onEnter: () => fl.addFile(),
-      canFocus: () => canAddFile(),
-    });
     nav.registerElement({
       id: "clear-all-btn",
       type: "button",
@@ -154,17 +136,6 @@ export function PDFToImagesUI() {
     });
   });
 
-  createEffect(() => {
-    nav.setIsInputMode(inputFocused());
-  });
-
-  // Sync back: reset inputFocused when nav exits input mode (Tab/Escape)
-  createEffect(() => {
-    if (!nav.isInputMode()) {
-      setInputFocused(false);
-    }
-  });
-
   onCleanup(() => {
     nav.clearElements();
   });
@@ -174,9 +145,15 @@ export function PDFToImagesUI() {
       <Label text="Files" count={fl.fileCount()} />
       <FileList
         files={fl.files}
+        fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
         onRemove={fl.removeFile}
+        onFilesSelected={async (paths) => {
+          for (const path of paths) {
+            await fl.addFileToList(path);
+          }
+        }}
         focusedIndex={() => {
           const focusId = nav.getFocusedId();
           if (focusId && focusId.startsWith("file-")) {
@@ -251,22 +228,7 @@ export function PDFToImagesUI() {
         />
       </ToggleRow>
 
-      <PathInput
-        value={fl.inputPath}
-        onInput={fl.setInputPath}
-        onSubmit={fl.addFile}
-        focused={inputFocused() || nav.isFocused("path-input")}
-        onFocus={() => setInputFocused(true)}
-      />
-
       <ButtonRow>
-        <Button
-          label="Add File"
-          color={canAddFile() ? "green" : "gray"}
-          disabled={!canAddFile()}
-          onClick={fl.addFile}
-          focused={nav.isFocused("add-file-btn")}
-        />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}

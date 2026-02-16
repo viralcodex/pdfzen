@@ -56,6 +56,7 @@ render(() => {
       }
     }
   });
+
   return (
     <box alignItems="center" justifyContent="center" flexGrow={1} backgroundColor="#141414">
       {selectedTool() === "" && (

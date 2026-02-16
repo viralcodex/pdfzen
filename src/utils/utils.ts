@@ -1,7 +1,13 @@
 import { PDFDocument } from "pdf-lib";
 import { join, basename } from "path";
-import { OUTPUT_DIR } from "../constants/constants";
+import {
+  linuxScript,
+  osaScript,
+  OUTPUT_DIR,
+  windowsScript,
+} from "../constants/constants";
 import { mkdir, stat } from "fs/promises";
+import type { MouseEvent } from "@opentui/core";
 
 const openedFiles = new Set<string>(); // to track opened files
 const outputCache = new Map<string, string>(); // inputPath+tool -> outputPath
@@ -23,7 +29,10 @@ export const chunkArray = (array: Array<any>, chunkSize: number) => {
   );
 };
 
-export const getOutputPath = async (prefix: string, inputFile?: string): Promise<string> => {
+export const getOutputPath = async (
+  prefix: string,
+  inputFile?: string,
+): Promise<string> => {
   await ensureOutputDir();
   const baseName = inputFile ? basename(inputFile, ".pdf") : "";
 
@@ -33,7 +42,9 @@ export const getOutputPath = async (prefix: string, inputFile?: string): Promise
     if (cached) return cached; // Reuse same output file
   }
 
-  const fileName = baseName ? `${baseName}-${prefix}.pdf` : `${prefix}-${Date.now()}.pdf`;
+  const fileName = baseName
+    ? `${baseName}-${prefix}.pdf`
+    : `${prefix}-${Date.now()}.pdf`;
   const outputPath = join(OUTPUT_DIR, fileName);
 
   if (inputFile) outputCache.set(`${inputFile}:${prefix}`, outputPath);
@@ -92,7 +103,10 @@ export const validatePdfFile = async (
       return { valid: false, error: "File must be a PDF" };
     // Check file size limit
     if (file.size > MAX_FILE_SIZE) {
-      return { valid: false, error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
+      return {
+        valid: false,
+        error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+      };
     }
     return { valid: true };
   } catch {
@@ -113,7 +127,10 @@ export const validateImageFile = async (
     }
     // Check file size limit
     if (file.size > MAX_FILE_SIZE) {
-      return { valid: false, error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` };
+      return {
+        valid: false,
+        error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+      };
     }
     return { valid: true };
   } catch {
@@ -121,11 +138,52 @@ export const validateImageFile = async (
   }
 };
 
+export const handleFileExplorer = async (
+  event: MouseEvent,
+  fileType: "pdf" | "image",
+): Promise<string[]> => {
+  if (event.button !== 0) return []; // only left click
+
+  const platform = process.platform;
+  let cmd: string[];
+
+  if (platform === "win32") {
+    const filter = fileType === "pdf"
+      ? "PDF files (*.pdf)|*.pdf"
+      : "Image files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg";
+    const script = windowsScript.replace("{{type}}", filter);
+    cmd = ["powershell", "-Command", script];
+  } else if (platform === "darwin") {
+    const types = fileType === "pdf" 
+      ? `"com.adobe.pdf"` 
+      : `"public.png", "public.jpeg"`;
+    const script = osaScript.replace("{{type}}", types);
+    cmd = ["osascript", "-e", script];
+  } else {
+    const filter = fileType === "pdf" ? "*.pdf" : "*.png *.jpg *.jpeg";
+    const script = linuxScript.replace("{{type}}", filter);
+    cmd = ["zenity", ...script.split(" ").slice(1)];
+  }
+
+  try {
+    const proc = Bun.spawn(cmd, { stderr: "ignore" });
+    const exitCode = await proc.exited;
+    if (exitCode !== 0) return []; // user cancelled
+
+    const output = await new Response(proc.stdout).text();
+    return output.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
 /**
  * Get platform-specific open command and arguments
  * Returns command and args separately to use with execFile (safe from injection)
  */
-const getPlatformOpenCommand = (filePath: string): { cmd: string; args: string[] } => {
+const getPlatformOpenCommand = (
+  filePath: string,
+): { cmd: string; args: string[] } => {
   const platform = process.platform;
   if (platform === "win32") {
     // Windows: use 'cmd' with /c start
@@ -145,7 +203,8 @@ export const closeFileTracking = (filePath: string) => {
   openedFiles.delete(filePath);
 };
 
-export const unescapePath = (path: string): string => path.replace(/\\(.)/g, "$1");
+export const unescapePath = (path: string): string =>
+  path.replace(/\\(.)/g, "$1");
 
 export const getPageCount = async (filePath: string): Promise<number> => {
   try {

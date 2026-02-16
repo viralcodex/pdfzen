@@ -2,7 +2,7 @@ import { TextAttributes } from "@opentui/core";
 import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { compressPDF, formatFileSize } from "../tools/compress";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
-import { ToolContainer, Label, FileList, PathInput, ButtonRow, Button, StatusBar } from "./ui";
+import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar } from "./ui";
 import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 
@@ -16,10 +16,8 @@ interface CompressionResult {
 export function CompressUI() {
   const fl = useFileList();
   const nav = useKeyboardNav();
-  const [inputFocused, setInputFocused] = createSignal(false);
   const [result, setResult] = createSignal<CompressionResult | null>(null);
 
-  const canAddFile = () => fl.inputPath().trim().length > 0;
   const canClearAll = () => fl.fileCount() > 0;
   const canCompress = () => fl.selectedFile() && !fl.isProcessing();
 
@@ -81,23 +79,7 @@ export function CompressUI() {
       });
     });
 
-    // Register input
-    nav.registerElement({
-      id: "path-input",
-      type: "input",
-      onEnter: () => {
-        if (canAddFile()) fl.addFile();
-      },
-    });
-
     // Register buttons
-    nav.registerElement({
-      id: "add-file-btn",
-      type: "button",
-      onEnter: () => fl.addFile(),
-      canFocus: () => canAddFile(),
-    });
-
     nav.registerElement({
       id: "clear-all-btn",
       type: "button",
@@ -122,18 +104,6 @@ export function CompressUI() {
     });
   });
 
-  // Track input focus mode
-  createEffect(() => {
-    nav.setIsInputMode(inputFocused());
-  });
-
-  // Sync back: reset inputFocused when nav exits input mode (Tab/Escape)
-  createEffect(() => {
-    if (!nav.isInputMode()) {
-      setInputFocused(false);
-    }
-  });
-
   onCleanup(() => {
     nav.clearElements();
   });
@@ -143,9 +113,15 @@ export function CompressUI() {
       <Label text="Files" count={fl.fileCount()} />
       <FileList
         files={fl.files}
+        fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
         onRemove={fl.removeFile}
+        onFilesSelected={async (paths) => {
+          for (const path of paths) {
+            await fl.addFileToList(path);
+          }
+        }}
         focusedIndex={() => {
           const focusId = nav.getFocusedId();
           if (focusId && focusId.startsWith("file-")) {
@@ -194,22 +170,7 @@ export function CompressUI() {
         </box>
       </Show>
 
-      <PathInput
-        value={fl.inputPath}
-        onInput={fl.setInputPath}
-        onSubmit={fl.addFile}
-        focused={inputFocused() || nav.isFocused("path-input")}
-        onFocus={() => setInputFocused(true)}
-      />
-
       <ButtonRow>
-        <Button
-          label="Add File"
-          color={canAddFile() ? "green" : "gray"}
-          disabled={!canAddFile()}
-          onClick={fl.addFile}
-          focused={nav.isFocused("add-file-btn")}
-        />
         <Button
           label="Clear All"
           color={canClearAll() ? "yellow" : "gray"}
