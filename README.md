@@ -1,4 +1,4 @@
-<img width="1408" height="600" alt="image" src="https://github.com/user-attachments/assets/7f9d7b7c-756a-493f-83ea-6c6025335714" />
+<img width="2480" height="1010" alt="image" src="https://github.com/user-attachments/assets/0b8d33ec-ae2c-4c15-93b7-e551c2be1f60" />
 
 <p align="center">
   <em>A terminal-based PDF utility tool for merging, splitting, compressing, rotating, encrypting, and decrypting PDFs.</em>
