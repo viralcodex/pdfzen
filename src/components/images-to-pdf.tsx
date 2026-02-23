@@ -144,9 +144,7 @@ export function ImagesToPDFUI() {
         onRemove={fl.removeFile}
         onMove={fl.moveFile}
         onFilesSelected={async (paths) => {
-          for (const path of paths) {
-            await fl.addFileToList(path);
-          }
+          await fl.addFilesToList(paths);
         }}
         showReorder={true}
         focusedIndex={() => {
