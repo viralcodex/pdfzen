@@ -29,7 +29,12 @@ export const EmptyBorderChars = {
   horizontal: "",
 };
 
-export const osaScript = `set theFiles to choose file of type {{{type}}} with prompt "Select files" with multiple selections allowed\n set output to ""\n repeat with f in theFiles\n set output to output & POSIX path of f & "\\n"\n end repeat\n return output\n`;
+export const osaScript = `set theFiles to choose file of type {{{type}}} with prompt "Select files" with multiple selections allowed
+set output to ""
+repeat with f in theFiles
+set output to output & POSIX path of f & "\\n"
+end repeat
+return output`;
 
 export const windowsScript = `Add-Type -AssemblyName System.Windows.Forms; $ofd = New-Object System.Windows.Forms.OpenFileDialog; $ofd.Filter = "{{type}}"; $ofd.Multiselect = $true; if ($ofd.ShowDialog() -eq "OK") { $ofd.FileNames -join "\\n" }`;
 

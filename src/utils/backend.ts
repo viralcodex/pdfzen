@@ -11,6 +11,7 @@ const BACKEND_PATH = join(BACKEND_DIR, "pdfzen_backend.py");
 const MAX_TIMEOUT_MS = 120000; // 2 minutes max execution time
 
 let cachedPythonPath: string | null = null;
+let cachedBackendCommand: { executable: string; prefixArgs: string[] } | null = null;
 
 /**
  * Get the Python executable path - prefer venv if it exists
@@ -36,7 +37,37 @@ async function getPythonPath(): Promise<string> {
 }
 
 /**
- * Call the Python backend with the given command and arguments
+ * Resolve backend execution command.
+ * Release bundles should set PDFZEN_BACKEND_BIN to a packaged backend binary.
+ */
+async function getBackendCommand(): Promise<{
+  executable: string;
+  prefixArgs: string[];
+}> {
+  if (cachedBackendCommand) return cachedBackendCommand;
+
+  const override = Bun.env.PDFZEN_BACKEND_BIN?.trim();
+  if (override) {
+    const executable = resolve(override);
+    const exists = await Bun.file(executable).exists();
+
+    if (!exists) {
+      throw new Error(
+        `Configured backend binary does not exist: ${executable}. Check PDFZEN_BACKEND_BIN.`,
+      );
+    }
+
+    cachedBackendCommand = { executable, prefixArgs: [] };
+    return cachedBackendCommand;
+  }
+
+  const pythonPath = await getPythonPath();
+  cachedBackendCommand = { executable: pythonPath, prefixArgs: [BACKEND_PATH] };
+  return cachedBackendCommand;
+}
+
+/**
+ * Call the backend with the given command and arguments
  * Uses Bun.spawn with argument array to prevent command injection
  * Sensitive data (passwords) passed via stdin to avoid exposure in process list
  */
@@ -48,7 +79,8 @@ export async function callBackend(
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   try {
-    const argsList: string[] = [BACKEND_PATH, command];
+    const backendCommand = await getBackendCommand();
+    const argsList: string[] = [command];
 
     for (const [key, value] of Object.entries(args)) {
       if (value === true) {
@@ -63,13 +95,14 @@ export async function callBackend(
       argsList.push("--stdin-secrets");
     }
 
-    const pythonPath = await getPythonPath();
-
-    const proc = Bun.spawn([pythonPath, ...argsList], {
-      stdin: "pipe",
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+    const proc = Bun.spawn(
+      [backendCommand.executable, ...backendCommand.prefixArgs, ...argsList],
+      {
+        stdin: "pipe",
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
 
     // Send sensitive data via stdin (not visible in process list)
     if (sensitiveData && Object.keys(sensitiveData).length > 0) {
@@ -148,6 +181,13 @@ export async function installBackendDeps(): Promise<{
   error?: string;
 }> {
   return await callBackend("install-deps", {});
+}
+
+/**
+ * Warm backend imports to reduce first-operation latency.
+ */
+export async function warmupBackend(): Promise<BackendResult> {
+  return await callBackend("warmup", {});
 }
 
 /**

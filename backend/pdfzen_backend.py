@@ -93,7 +93,7 @@ def cmd_images_to_pdf(args):
     temp_files = []  # Track temp files for cleanup
     try:
         fitz = get_fitz()
-        Image = get_pil()
+        Image = None
         
         doc = fitz.open()
         image_paths = args.inputs.split("|")
@@ -102,9 +102,25 @@ def cmd_images_to_pdf(args):
             if not os.path.exists(img_path):
                 continue
 
-            # Read dimensions once via PIL for layout calculations.
-            with Image.open(img_path) as img:
-                img_width, img_height = img.size
+            # Fast metadata path via PyMuPDF (avoids full-byte reads and PIL import).
+            img_width = None
+            img_height = None
+            try:
+                img_doc = fitz.open(img_path)
+                if len(img_doc) > 0:
+                    rect = img_doc[0].rect
+                    img_width = rect.width
+                    img_height = rect.height
+                img_doc.close()
+            except Exception:
+                pass
+
+            # Fallback metadata path via PIL for unsupported formats.
+            if not img_width or not img_height:
+                if Image is None:
+                    Image = get_pil()
+                with Image.open(img_path) as img:
+                    img_width, img_height = img.size
             
             if args.page_size == "a4":
                 page = doc.new_page(width=595.28, height=841.89)
@@ -132,6 +148,8 @@ def cmd_images_to_pdf(args):
                 pass
 
             # Fallback path: only convert to temp JPEG when direct insert fails.
+            if Image is None:
+                Image = get_pil()
             with Image.open(img_path) as img:
                 if img.mode in ("RGBA", "P"):
                     img = img.convert("RGB")
@@ -360,8 +378,27 @@ def cmd_install_deps(args):
     except Exception as e:
         output_json(False, error=str(e))
 
+def cmd_warmup(args):
+    """Warm backend imports to reduce first-operation latency."""
+    try:
+        fitz = get_fitz()
+        # Keep PIL lazy unless available; not required for all ops.
+        try:
+            Image = get_pil()
+            pil_version = getattr(Image, "__version__", None)
+        except Exception:
+            pil_version = None
 
-def main():
+        output_json(True, {
+            "warmed": True,
+            "pymupdf": fitz.version[0],
+            "pillow": pil_version,
+        })
+    except Exception as e:
+        output_json(False, error=str(e))
+
+
+def build_parser():
     parser = argparse.ArgumentParser(description="PDFZen Backend")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
     
@@ -415,13 +452,22 @@ def main():
     # install-deps
     install = subparsers.add_parser("install-deps", help="Install dependencies")
     install.set_defaults(func=cmd_install_deps)
-    
+
+    # warmup
+    warmup = subparsers.add_parser("warmup", help="Warm backend imports")
+    warmup.set_defaults(func=cmd_warmup)
+
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         sys.exit(1)
-    
+
     args.func(args)
 
 
