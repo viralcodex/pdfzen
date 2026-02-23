@@ -4,26 +4,38 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version label for artifact naming (defaults to tag or commit)"
+        description: "Version label (defaults to tag, VERSION, or commit)"
         required: false
         type: string
   push:
     tags:
       - "v*"
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    name: Build Bundle and Publish
-    runs-on: macos-latest
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: darwin-arm64
+            archive_ext: tar.gz
+          - os: ubuntu-latest
+            target: linux-x64
+            archive_ext: tar.gz
+          - os: windows-latest
+            target: windows-x64
+            archive_ext: zip
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -33,50 +45,161 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qpdf
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install qpdf
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build release bundle
-        run: bun run release:bundle
-
-      - name: Verify release bundle
-        run: bun run release:verify
-
-      - name: Package release artifact
-        id: package
+      - name: Resolve version
+        id: version
         shell: bash
         run: |
           VERSION_INPUT="${{ github.event.inputs.version || '' }}"
           VERSION_TAG="${{ github.ref_type == 'tag' && github.ref_name || '' }}"
+          VERSION_FILE=""
+          if [ -f VERSION ]; then
+            VERSION_FILE="$(tr -d '[:space:]' < VERSION)"
+          fi
           VERSION="${VERSION_INPUT:-$VERSION_TAG}"
+          VERSION="${VERSION:-$VERSION_FILE}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${GITHUB_SHA::7}"
+          fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
-          if [ -n "$VERSION" ]; then
-            ./scripts/release/package.sh "$VERSION"
+      - name: Build UI executable
+        run: bun run scripts/release/build-ui.ts
+
+      - name: Build backend executable (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r backend/requirements.txt pyinstaller
+          mkdir -p release/lib release/.build/backend
+          pyinstaller \
+            --noconfirm \
+            --clean \
+            --onefile \
+            --name pdfzen-backend \
+            --distpath release/lib \
+            --workpath release/.build/backend/work \
+            --specpath release/.build/backend/spec \
+            backend/pdfzen_backend.py
+
+      - name: Build backend executable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt pyinstaller
+          New-Item -ItemType Directory -Force -Path release/lib | Out-Null
+          New-Item -ItemType Directory -Force -Path release/.build/backend | Out-Null
+          pyinstaller `
+            --noconfirm `
+            --clean `
+            --onefile `
+            --name pdfzen-backend `
+            --distpath release/lib `
+            --workpath release/.build/backend/work `
+            --specpath release/.build/backend/spec `
+            backend/pdfzen_backend.py
+
+      - name: Create launcher (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p release/bin
+          cat > release/bin/pdfzen <<'LAUNCHER'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+          ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+          export PDFZEN_BACKEND_BIN="$ROOT_DIR/lib/pdfzen-backend"
+          cd "$ROOT_DIR"
+          exec "$ROOT_DIR/lib/pdfzen-ui" "$@"
+          LAUNCHER
+          chmod +x release/bin/pdfzen release/lib/pdfzen-ui release/lib/pdfzen-backend
+
+      - name: Create launcher (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release/bin | Out-Null
+          @"
+          @echo off
+          setlocal
+          set "SCRIPT_DIR=%~dp0"
+          set "ROOT_DIR=%SCRIPT_DIR%.."
+          set "PDFZEN_BACKEND_BIN=%ROOT_DIR%\\lib\\pdfzen-backend.exe"
+          cd /d "%ROOT_DIR%"
+          "%ROOT_DIR%\\lib\\pdfzen-ui.exe" %*
+          "@ | Set-Content -Path release/bin/pdfzen.cmd -NoNewline
+
+      - name: Smoke test backend
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./release/lib/pdfzen-backend.exe warmup
           else
-            ./scripts/release/package.sh
+            ./release/lib/pdfzen-backend warmup
           fi
 
-          ARCHIVE_PATH="$(ls -1 release/artifacts/*.tar.gz | head -n 1)"
-          CHECKSUM_PATH="$(ls -1 release/artifacts/*.sha256 | head -n 1)"
-          echo "archive_path=$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
-          echo "checksum_path=$CHECKSUM_PATH" >> "$GITHUB_OUTPUT"
+      - name: Package artifact (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p release/artifacts
+          NAME="pdfzen-${{ steps.version.outputs.value }}-${{ matrix.target }}"
+          ARCHIVE="release/artifacts/${NAME}.tar.gz"
+          tar -C . -czf "$ARCHIVE" release/bin release/lib
+          if command -v shasum >/dev/null 2>&1; then
+            shasum -a 256 "$ARCHIVE" > "release/artifacts/${NAME}.sha256"
+          else
+            sha256sum "$ARCHIVE" > "release/artifacts/${NAME}.sha256"
+          fi
 
-      - name: Upload artifacts
+      - name: Package artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release/artifacts | Out-Null
+          $name = "pdfzen-${{ steps.version.outputs.value }}-${{ matrix.target }}"
+          $archive = "release/artifacts/$name.zip"
+          Compress-Archive -Path release/bin,release/lib -DestinationPath $archive -Force
+          $hash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLower()
+          "$hash  $archive" | Set-Content "release/artifacts/$name.sha256"
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pdfzen-release-${{ github.run_number }}
-          path: |
-            release/artifacts/*.tar.gz
-            release/artifacts/*.sha256
+          name: pdfzen-${{ matrix.target }}
+          path: release/artifacts/*
           if-no-files-found: error
 
-      - name: Publish GitHub Release
-        if: github.ref_type == 'tag'
+  publish:
+    name: Publish GitHub Release
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            release/artifacts/*.tar.gz
-            release/artifacts/*.sha256
+          files: release-artifacts/**/*
           generate_release_notes: true
