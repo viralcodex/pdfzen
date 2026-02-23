@@ -150,9 +150,7 @@ export function PDFToImagesUI() {
         onSelect={fl.selectFile}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
-          for (const path of paths) {
-            await fl.addFileToList(path);
-          }
+          await fl.addFilesToList(paths);
         }}
         focusedIndex={() => {
           const focusId = nav.getFocusedId();

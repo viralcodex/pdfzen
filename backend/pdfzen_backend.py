@@ -25,6 +25,15 @@ def get_pil():
     from PIL import Image
     return Image
 
+def parse_bool(value: str) -> bool:
+    """Parse CLI boolean values like true/false, 1/0, yes/no."""
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise argparse.ArgumentTypeError(f"Invalid boolean value: {value}")
+
 
 def output_json(success: bool, data: Optional[dict] = None, error: Optional[str] = None):
     """Output JSON result to stdout"""
@@ -92,45 +101,47 @@ def cmd_images_to_pdf(args):
         for img_path in image_paths:
             if not os.path.exists(img_path):
                 continue
-                
-            # Open with PIL to get dimensions and convert if needed
-            img = Image.open(img_path)
-            
-            # Convert to RGB if necessary (e.g., RGBA PNGs)
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-            
-            # Save to secure temp file as JPEG for PyMuPDF
-            fd, temp_path = tempfile.mkstemp(suffix=".jpg")
-            os.close(fd)  # Close file descriptor, PIL will open it
-            temp_files.append(temp_path)
-            img.save(temp_path, "JPEG", quality=95)
-            img.close()
-            
-            # Insert into PDF
-            img_doc = fitz.open(temp_path)
-            rect = img_doc[0].rect
+
+            # Read dimensions once via PIL for layout calculations.
+            with Image.open(img_path) as img:
+                img_width, img_height = img.size
             
             if args.page_size == "a4":
                 page = doc.new_page(width=595.28, height=841.89)
             elif args.page_size == "letter":
                 page = doc.new_page(width=612, height=792)
             else:  # fit
-                page = doc.new_page(width=rect.width, height=rect.height)
+                page = doc.new_page(width=img_width, height=img_height)
             
             # Scale image to fit page if needed
             if args.page_size != "fit":
-                scale = min(page.rect.width / rect.width, page.rect.height / rect.height)
-                new_width = rect.width * scale
-                new_height = rect.height * scale
+                scale = min(page.rect.width / img_width, page.rect.height / img_height)
+                new_width = img_width * scale
+                new_height = img_height * scale
                 x = (page.rect.width - new_width) / 2
                 y = (page.rect.height - new_height) / 2
                 target_rect = fitz.Rect(x, y, x + new_width, y + new_height)
             else:
                 target_rect = page.rect
-            
+
+            # Fast path: insert the source file directly (no temp file, no re-encode).
+            try:
+                page.insert_image(target_rect, filename=img_path)
+                continue
+            except Exception:
+                pass
+
+            # Fallback path: only convert to temp JPEG when direct insert fails.
+            with Image.open(img_path) as img:
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+
+                fd, temp_path = tempfile.mkstemp(suffix=".jpg")
+                os.close(fd)  # Close file descriptor; PIL will reopen path
+                temp_files.append(temp_path)
+                img.save(temp_path, "JPEG", quality=95)
+
             page.insert_image(target_rect, filename=temp_path)
-            img_doc.close()
         
         doc.save(args.output)
         total_pages = len(doc)
@@ -376,10 +387,10 @@ def main():
     protect.add_argument("--output", required=True, help="Output PDF path")
     protect.add_argument("--user-password", help="Password to open PDF")
     protect.add_argument("--owner-password", help="Password to modify PDF")
-    protect.add_argument("--allow-print", action="store_true", default=True)
-    protect.add_argument("--allow-copy", action="store_true", default=True)
-    protect.add_argument("--allow-modify", action="store_true", default=True)
-    protect.add_argument("--allow-annotate", action="store_true", default=True)
+    protect.add_argument("--allow-print", type=parse_bool, default=True)
+    protect.add_argument("--allow-copy", type=parse_bool, default=True)
+    protect.add_argument("--allow-modify", type=parse_bool, default=True)
+    protect.add_argument("--allow-annotate", type=parse_bool, default=True)
     protect.add_argument("--stdin-secrets", action="store_true", help="Read passwords from stdin as JSON")
     protect.set_defaults(func=cmd_protect_pdf)
     

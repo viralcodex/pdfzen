@@ -4,6 +4,7 @@ import { unescapePath, validatePdfFile, validateImageFile, getPageCount } from "
 import type { StatusType, FileListOptions } from "../model/models";
 
 type Status = { msg: string; type: StatusType };
+const READY_STATUS: Status = { msg: "Ready", type: "info" };
 
 export type { FileListOptions };
 
@@ -14,8 +15,9 @@ export function useFileList(options: FileListOptions = {}) {
   const [selectedIndex, setSelectedIndex] = createSignal<number | null>(null);
   const [pageCount, setPageCount] = createSignal(0);
   const [inputPath, setInputPath] = createSignal("");
-  const [status, setStatus] = createSignal<Status>({ msg: "Ready", type: "info" });
+  const [status, setStatus] = createSignal<Status>(READY_STATUS);
   const [isProcessing, setIsProcessing] = createSignal(false);
+  const pendingFiles = new Set<string>();
 
   const fileCount = createMemo(() => files().length);
   const selectedFile = createMemo(() => {
@@ -23,13 +25,40 @@ export function useFileList(options: FileListOptions = {}) {
     return idx !== null ? (files()[idx] ?? null) : null;
   });
 
+  const pageCountCache = new Map<string, number>();
+  let pageCountRequestId = 0;
+
+  const invalidatePageCountRequests = () => {
+    pageCountRequestId++;
+  };
+
+  const clearPageCountState = () => {
+    invalidatePageCountRequests();
+    setPageCount(0);
+  };
+
   const updatePageCount = async (file: string | null) => {
     if (!trackPageCount || !file) {
-      setPageCount(0);
+      clearPageCountState();
       return 0;
     }
+
+    const cached = pageCountCache.get(file);
+    if (cached !== undefined) {
+      invalidatePageCountRequests();
+      setPageCount(cached);
+      return cached;
+    }
+
+    const requestId = ++pageCountRequestId;
     const pages = await getPageCount(file);
-    setPageCount(pages);
+
+    pageCountCache.set(file, pages);
+
+    if (requestId === pageCountRequestId) { // Ensure this is the latest request
+      setPageCount(pages);
+    }
+
     return pages;
   };
 
@@ -37,35 +66,67 @@ export function useFileList(options: FileListOptions = {}) {
     const cleanPath = unescapePath(rawPath.trim());
     if (!cleanPath) return false;
 
-    if (files().includes(cleanPath)) {
+    if (pendingFiles.has(cleanPath) || files().includes(cleanPath)) {
       setStatus({ msg: "File already added", type: "error" });
       return false;
     }
 
-    setStatus({ msg: "Validating file...", type: "info" });
-    const validator = acceptImages ? validateImageFile : validatePdfFile;
-    const { valid, error } = await validator(cleanPath);
+    pendingFiles.add(cleanPath);
 
-    if (!valid) {
-      setStatus(
-        fromPaste
-          ? { msg: "Ready", type: "info" }
-          : { msg: error || "Invalid file", type: "error" },
-      );
-      return false;
+    try {
+      setStatus({ msg: "Validating file...", type: "info" });
+      const validator = acceptImages ? validateImageFile : validatePdfFile;
+      const { valid, error } = await validator(cleanPath);
+
+      if (!valid) {
+        setStatus(
+          fromPaste
+            ? READY_STATUS
+            : { msg: error || "Invalid file", type: "error" },
+        );
+        return false;
+      }
+
+      let newIndex = -1;
+      let added = false;
+      setFiles((prev) => {
+        if (prev.includes(cleanPath)) return prev;
+        added = true;
+        newIndex = prev.length;
+        return [...prev, cleanPath];
+      });
+
+      if (!added) {
+        setStatus({ msg: "File already added", type: "error" });
+        return false;
+      }
+
+      // Auto-select first file
+      if (selectedIndex() === null && newIndex !== -1) {
+        setSelectedIndex(newIndex);
+        await updatePageCount(cleanPath);
+      }
+
+      setStatus({ msg: `${newIndex + 1} file(s) added`, type: "info" });
+      return true;
+    } finally {
+      pendingFiles.delete(cleanPath);
+    }
+  };
+
+  const addFilesToList = async (rawPaths: string[], fromPaste = false): Promise<number> => {
+    const uniquePaths = [...new Set(rawPaths.map((p) => unescapePath(p.trim())).filter(Boolean))];
+    if (uniquePaths.length === 0) return 0;
+
+    const before = fileCount();
+    await Promise.all(uniquePaths.map((path) => addFileToList(path, fromPaste)));
+    const addedCount = fileCount() - before;
+
+    if (addedCount > 0) {
+      setStatus({ msg: `${fileCount()} file(s) ready`, type: "info" });
     }
 
-    const newIndex = files().length;
-    setFiles((prev) => [...prev, cleanPath]);
-
-    // Auto-select first file
-    if (selectedIndex() === null) {
-      setSelectedIndex(newIndex);
-      await updatePageCount(cleanPath);
-    }
-
-    setStatus({ msg: `${newIndex + 1} file(s) added`, type: "info" });
-    return true;
+    return Math.max(0, addedCount);
   };
 
   const selectFile = async (index: number) => {
@@ -84,20 +145,24 @@ export function useFileList(options: FileListOptions = {}) {
     const len = files().length;
     const selected = selectedIndex();
     const currentFiles = files();
+    const removedFile = currentFiles[index];
+    if (removedFile) {
+      pageCountCache.delete(removedFile);
+    }
 
     setFiles((prev) => prev.filter((_, i) => i !== index));
 
     // Update selection
     if (selected !== null) {
       if (len === 1) {
+        clearPageCountState();
         setSelectedIndex(null);
-        setPageCount(0);
       } else if (index === selected) {
         const newIdx = Math.min(index, len - 2);
         setSelectedIndex(newIdx);
         // Get file from updated array (after removal)
         const fileToSelect = newIdx < index ? currentFiles[newIdx] : currentFiles[newIdx + 1];
-        updatePageCount(fileToSelect ?? null);
+        void updatePageCount(fileToSelect ?? null);
       } else if (index < selected) {
         setSelectedIndex(selected - 1);
       }
@@ -123,10 +188,13 @@ export function useFileList(options: FileListOptions = {}) {
 
   const clearAll = () => {
     setFiles([]);
+    pendingFiles.clear();
+    invalidatePageCountRequests();
+    pageCountCache.clear();
     setSelectedIndex(null);
     setPageCount(0);
     setInputPath("");
-    setStatus({ msg: "Ready", type: "info" });
+    setStatus(READY_STATUS);
   };
 
   //main hook to drag and drop files into the app
@@ -150,6 +218,7 @@ export function useFileList(options: FileListOptions = {}) {
     setIsProcessing,
     // Actions
     addFileToList,
+    addFilesToList,
     selectFile,
     removeFile,
     moveFile,

@@ -45,6 +45,8 @@ export async function callBackend(
   args: Record<string, any>,
   sensitiveData?: Record<string, string>,
 ): Promise<BackendResult> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   try {
     const argsList: string[] = [BACKEND_PATH, command];
 
@@ -77,7 +79,7 @@ export async function callBackend(
 
     // Set up timeout
     const timeoutPromise = new Promise<BackendResult>((resolve) => {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         proc.kill();
         resolve({
           success: false,
@@ -108,6 +110,11 @@ export async function callBackend(
       success: false,
       error: err instanceof Error ? err.message : "Backend execution failed",
     };
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
   }
 }
 
@@ -201,10 +208,10 @@ export async function backendProtectPdf(opts: {
     {
       input: opts.input,
       output: opts.output,
-      "allow-print": opts.allowPrint ?? true,
-      "allow-copy": opts.allowCopy ?? true,
-      "allow-modify": opts.allowModify ?? true,
-      "allow-annotate": opts.allowAnnotate ?? true,
+      "allow-print": String(opts.allowPrint ?? true),
+      "allow-copy": String(opts.allowCopy ?? true),
+      "allow-modify": String(opts.allowModify ?? true),
+      "allow-annotate": String(opts.allowAnnotate ?? true),
     },
     sensitiveData,
   );
