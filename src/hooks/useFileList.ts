@@ -1,9 +1,8 @@
 import { createSignal, createMemo } from "solid-js";
 import { usePaste } from "@opentui/solid";
 import { unescapePath, validatePdfFile, validateImageFile, getPageCount } from "../utils/utils";
-import type { StatusType, FileListOptions } from "../model/models";
+import type { Status, FileListOptions } from "../model/models";
 
-type Status = { msg: string; type: StatusType };
 const READY_STATUS: Status = { msg: "Ready", type: "info" };
 
 export type { FileListOptions };

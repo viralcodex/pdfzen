@@ -10,6 +10,12 @@
     "dev:backend": "./dev.sh backend",
     "setup": "./dev.sh setup",
     "build": "bun build ./src/index.tsx --outdir=dist --target=bun --minify --sourcemap",
+    "release:build:ui": "./scripts/release/build-ui.sh",
+    "release:build:backend": "./scripts/release/build-backend.sh",
+    "release:bundle": "./scripts/release/bundle.sh",
+    "release:verify": "./scripts/release/verify.sh",
+    "release:package": "./scripts/release/package.sh",
+    "release:all": "bun run release:bundle && bun run release:verify && bun run release:package",
     "start": "bun run dist/index.js",
     "lint": "oxlint .",
     "format": "oxfmt ."

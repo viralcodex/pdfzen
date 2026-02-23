@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label for artifact naming (defaults to tag or commit)"
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build Bundle and Publish
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build release bundle
+        run: bun run release:bundle
+
+      - name: Verify release bundle
+        run: bun run release:verify
+
+      - name: Package release artifact
+        id: package
+        shell: bash
+        run: |
+          VERSION_INPUT="${{ github.event.inputs.version || '' }}"
+          VERSION_TAG="${{ github.ref_type == 'tag' && github.ref_name || '' }}"
+          VERSION="${VERSION_INPUT:-$VERSION_TAG}"
+
+          if [ -n "$VERSION" ]; then
+            ./scripts/release/package.sh "$VERSION"
+          else
+            ./scripts/release/package.sh
+          fi
+
+          ARCHIVE_PATH="$(ls -1 release/artifacts/*.tar.gz | head -n 1)"
+          CHECKSUM_PATH="$(ls -1 release/artifacts/*.sha256 | head -n 1)"
+          echo "archive_path=$ARCHIVE_PATH" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=$CHECKSUM_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfzen-release-${{ github.run_number }}
+          path: |
+            release/artifacts/*.tar.gz
+            release/artifacts/*.sha256
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/artifacts/*.tar.gz
+            release/artifacts/*.sha256
+          generate_release_notes: true

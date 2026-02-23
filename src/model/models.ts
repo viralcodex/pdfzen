@@ -8,6 +8,8 @@ export type FocusableElement = {
   canFocus?: () => boolean;
 };
 
+export interface Status { msg: string; type: StatusType };
+
 // ============ Backend Types ============
 export interface BackendResult {
   success: boolean;

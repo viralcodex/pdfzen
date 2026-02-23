@@ -154,8 +154,8 @@ export const handleFileExplorer = async (
     const script = windowsScript.replace("{{type}}", filter);
     cmd = ["powershell", "-Command", script];
   } else if (platform === "darwin") {
-    const types = fileType === "pdf" 
-      ? `"com.adobe.pdf"` 
+    const types = fileType === "pdf"
+      ? `"com.adobe.pdf"`
       : `"public.png", "public.jpeg"`;
     const script = osaScript.replace("{{type}}", types);
     cmd = ["osascript", "-e", script];
