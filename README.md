@@ -6,7 +6,12 @@
 
 ## Installation
 
-To install dependencies:
+Prerequisites:
+
+- Bun (latest recommended)
+- Python 3.10+
+
+Install project dependencies:
 
 ```bash
 bun install
@@ -22,63 +27,30 @@ bun run setup
 
 ## Usage
 
-To run:
+Run the app (cross-platform):
 
 ```bash
-bun dev
+bun run dev:all
 ```
 
-Or use the unified dev script:
+Other commands:
 
 ```bash
-bun dev:all     # Setup (if needed) + run UI
-bun dev:ui      # Run UI only
-bun dev:backend # Setup backend only
+bun run setup         # Setup backend + frontend dependencies only
+bun run dev:ui        # Run UI only
+bun run dev:backend   # Run backend CLI
 ```
 
-## Release Bundle (one command for users)
-
-Build a local release bundle:
+Install a global `pdfzen` command (macOS/Linux/Windows):
 
 ```bash
-bun run release:bundle
+bun run install:global
 ```
 
-Verify bundle integrity/executables:
+Then reload your shell and run from anywhere:
 
 ```bash
-bun run release:verify
-```
-
-Create versioned release artifact + checksum:
-
-```bash
-bun run release:package
-```
-
-One command for full release flow:
-
-```bash
-bun run release:all
-```
-
-Notes:
-
-- First backend build may download Python packaging dependencies (`pyinstaller` + backend deps).
-- For offline environments, preinstall backend deps in `backend/.venv`, then run with `PDFZEN_BACKEND_OFFLINE=1 bun run release:bundle`.
-
-Bundle output:
-
-- `release/bin/pdfzen` - launcher command
-- `release/lib/pdfzen-ui` - compiled Bun executable
-- `release/lib/pdfzen-backend` - packaged Python backend executable
-- `release/artifacts/*.tar.gz` - packaged release archive
-- `release/artifacts/*.sha256` - SHA-256 checksum for archive
-
-Run the bundled app:
-
-```bash
-./release/bin/pdfzen
+pdfzen
 ```
 
 ## Features
