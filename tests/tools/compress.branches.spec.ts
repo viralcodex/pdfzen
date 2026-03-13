@@ -50,7 +50,7 @@ describe("compress tool branch coverage", () => {
       outputPath: "/tmp/compressed.pdf",
       originalSize: 1000,
       compressedSize: 500,
-      compressionRatio: 50,
+      compressionRatio: "50",
     });
   });
 
