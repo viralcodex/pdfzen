@@ -1,8 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import type { MergePDFsInput, MergePDFsOutput } from "../model/models";
 
-export type { MergePDFsInput, MergePDFsOutput };
-
 /**
  * Merges multiple PDF files into a single PDF
  * @param input - Array of input PDF paths and output path

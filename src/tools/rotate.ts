@@ -1,8 +1,6 @@
 import { PDFDocument, degrees } from "pdf-lib";
 import type { RotatePDFInput, RotatePDFOutput } from "../model/models";
 
-export type { RotatePDFInput, RotatePDFOutput };
-
 /**
  * Rotates pages in a PDF file
  * @param input - Input PDF path, output path, rotation angle, and pages to rotate

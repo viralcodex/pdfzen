@@ -1,8 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import type { ImagesToPDFInput, ImagesToPDFOutput } from "../model/models";
 
-export type { ImagesToPDFInput, ImagesToPDFOutput };
-
 /**
  * Converts multiple images into a single PDF file using pdf-lib
  * @param input - Image paths, output path, and page size options

@@ -2,17 +2,9 @@ import { TextAttributes } from "@opentui/core";
 import { useTerminalDimensions } from "@opentui/solid";
 import { Show, Index, createSignal } from "solid-js";
 import type { JSX, Accessor, Setter } from "solid-js";
-import { EmptyBorderChars } from "../constants/constants";
+import { EmptyBorderChars, STATUS_COLORS } from "../constants/constants";
 import type { StatusType } from "../model/models";
 import { handleFileExplorer } from "../utils/utils";
-
-export type { StatusType };
-
-export const STATUS_COLORS: Record<StatusType, string> = {
-  error: "red",
-  success: "green",
-  info: "white",
-};
 
 // ============ Layout Components ============
 export function ToolContainer(props: { children: JSX.Element }) {

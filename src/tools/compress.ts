@@ -1,8 +1,6 @@
 import mupdf from "../utils/mupdf";
 import type { CompressPDFInput, CompressPDFOutput } from "../model/models";
 
-export type { CompressPDFInput, CompressPDFOutput };
-
 /**
  * Compresses a PDF file using MuPDF WASM
  * Performs: garbage collection, image recompression, stream deflation, font compression
