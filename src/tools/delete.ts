@@ -1,8 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import type { DeletePagesInput, DeletePagesOutput } from "../model/models";
 
-export type { DeletePagesInput, DeletePagesOutput };
-
 /**
  * Deletes specified pages from a PDF file
  * @param input - Input PDF path, output path, and pages to delete

@@ -3,8 +3,6 @@ import { mkdir } from "fs/promises";
 import { join, basename } from "path";
 import type { SplitPDFInput, SplitPDFOutput } from "../model/models";
 
-export type { SplitPDFInput, SplitPDFOutput };
-
 /**
  * Splits a PDF file into multiple files based on the specified mode
  * @param input - Input PDF path, output directory, and split configuration

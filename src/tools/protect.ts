@@ -1,8 +1,6 @@
 import mupdf from "../utils/mupdf";
 import type { ProtectPDFInput, ProtectPDFOutput } from "../model/models";
 
-export type { ProtectPDFInput, ProtectPDFOutput };
-
 /**
  * Compute the PDF permissions bitfield (P value) from permission flags.
  * PDF spec: bits 1-2 must be 0, bits 7-8 and 13-32 must be 1.

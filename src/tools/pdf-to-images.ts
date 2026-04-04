@@ -3,8 +3,6 @@ import { mkdir } from "fs/promises";
 import { join, basename } from "path";
 import type { PDFToImagesInput, PDFToImagesOutput } from "../model/models";
 
-export type { PDFToImagesInput, PDFToImagesOutput };
-
 /**
  * Converts PDF pages to images using MuPDF WASM
  * @param input - Input PDF path, output directory, and conversion options
