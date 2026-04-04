@@ -1,10 +1,46 @@
-import { backendProtectPdf, callBackend } from "../utils/backend";
+import mupdf from "mupdf";
 import type { ProtectPDFInput, ProtectPDFOutput } from "../model/models";
 
 export type { ProtectPDFInput, ProtectPDFOutput };
 
 /**
- * Protects a PDF with password encryption using Python backend (pikepdf)
+ * Compute the PDF permissions bitfield (P value) from permission flags.
+ * PDF spec: bits 1-2 must be 0, bits 7-8 and 13-32 must be 1.
+ */
+function computePermissions(opts: {
+  print?: boolean;
+  copy?: boolean;
+  modify?: boolean;
+  annotate?: boolean;
+}): number {
+  // Start with all permissions granted (0xFFFFFFFC signed)
+  let p = -4;
+  if (opts.print === false) p &= ~((1 << 2) | (1 << 11)); // bits 3, 12
+  if (opts.modify === false) p &= ~((1 << 3) | (1 << 8) | (1 << 10)); // bits 4, 9, 11
+  if (opts.copy === false) p &= ~(1 << 4); // bit 5
+  if (opts.annotate === false) p &= ~(1 << 5); // bit 6
+  return p;
+}
+
+/**
+ * Build the mupdf save options string for encryption.
+ * Passwords are interpolated into the options string; characters that would
+ * break the comma-delimited parser are rejected upfront.
+ */
+function buildEncryptOptions(opts: {
+  userPassword?: string;
+  ownerPassword?: string;
+  permissions: number;
+}): string {
+  const parts: string[] = ["encrypt=aes-256"];
+  if (opts.userPassword) parts.push(`user-password=${opts.userPassword}`);
+  if (opts.ownerPassword) parts.push(`owner-password=${opts.ownerPassword}`);
+  parts.push(`permissions=${opts.permissions}`);
+  return parts.join(",");
+}
+
+/**
+ * Protects a PDF with password encryption using MuPDF WASM
  * @param input - Input PDF path, output path, and protection options
  * @returns Result with success status
  */
@@ -18,30 +54,39 @@ export async function protectPDF(input: ProtectPDFInput): Promise<ProtectPDFOutp
       };
     }
 
-    const permissions = input.permissions || {};
+    // Reject passwords containing characters that break the options parser
+    for (const pw of [input.userPassword, input.ownerPassword]) {
+      if (pw && /[,=]/.test(pw)) {
+        return {
+          success: false,
+          error: "Passwords must not contain ',' or '=' characters",
+        };
+      }
+    }
 
-    const result = await backendProtectPdf({
-      input: input.inputPath,
-      output: input.outputPath,
+    const permissions = input.permissions || {};
+    const permBits = computePermissions(permissions);
+
+    const pdfBytes = await Bun.file(input.inputPath).arrayBuffer();
+    const doc = mupdf.Document.openDocument(pdfBytes, "application/pdf");
+    const pdfDoc = doc.asPDF();
+    if (!pdfDoc) {
+      return { success: false, error: "Not a valid PDF document" };
+    }
+
+    const opts = buildEncryptOptions({
       userPassword: input.userPassword,
       ownerPassword: input.ownerPassword,
-      allowPrint: permissions.print ?? true,
-      allowCopy: permissions.copy ?? true,
-      allowModify: permissions.modify ?? true,
-      allowAnnotate: permissions.annotate ?? true,
+      permissions: permBits,
     });
 
-    if (result.success) {
-      return {
-        success: true,
-        outputPath: result.outputPath,
-      };
-    } else {
-      return {
-        success: false,
-        error: result.error || "Unknown error",
-      };
-    }
+    const buf = pdfDoc.saveToBuffer(opts);
+    await Bun.write(input.outputPath, buf.asUint8Array());
+
+    return {
+      success: true,
+      outputPath: input.outputPath,
+    };
   } catch (error) {
     return {
       success: false,
@@ -63,27 +108,28 @@ export async function unprotectPDF(
   password: string,
 ): Promise<ProtectPDFOutput> {
   try {
-    // Pass password via stdin for security (not visible in process list)
-    const result = await callBackend(
-      "unprotect",
-      {
-        input: inputPath,
-        output: outputPath,
-      },
-      { password }, // sensitiveData - sent via stdin
-    );
+    const pdfBytes = await Bun.file(inputPath).arrayBuffer();
+    const doc = mupdf.Document.openDocument(pdfBytes, "application/pdf");
 
-    if (result.success) {
-      return {
-        success: true,
-        outputPath: result.outputPath,
-      };
-    } else {
-      return {
-        success: false,
-        error: result.error || "Unknown error",
-      };
+    if (doc.needsPassword()) {
+      const auth = doc.authenticatePassword(password);
+      if (auth === 0) {
+        return { success: false, error: "Incorrect password" };
+      }
     }
+
+    const pdfDoc = doc.asPDF();
+    if (!pdfDoc) {
+      return { success: false, error: "Not a valid PDF document" };
+    }
+
+    const buf = pdfDoc.saveToBuffer("decrypt");
+    await Bun.write(outputPath, buf.asUint8Array());
+
+    return {
+      success: true,
+      outputPath,
+    };
   } catch (error) {
     return {
       success: false,

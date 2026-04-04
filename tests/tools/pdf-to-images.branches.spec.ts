@@ -1,68 +1,27 @@
-import { describe, expect, it, mock } from "bun:test";
-
-const backendModulePath = new URL("../../src/utils/backend.ts", import.meta.url).pathname;
-
-let backendMode: "success" | "fallback" = "success";
-
-const backendPdfToImages = async () => {
-  if (backendMode === "success") {
-    return {
-      success: true,
-      outputFiles: ["/tmp/out/page-1.png", "/tmp/out/page-2.png"],
-      totalImages: 2,
-    };
-  }
-
-  return {
-    success: false,
-  };
-};
-
-const mockFactory = () => ({
-  backendCompressPdf: async () => ({ success: false, error: "stub" }),
-  backendImagesToPdf: async () => ({ success: false, error: "stub" }),
-  backendPdfToImages,
-  backendProtectPdf: async () => ({ success: false, error: "stub" }),
-  callBackend: async () => ({ success: false, error: "stub" }),
-  checkBackendDeps: async () => ({ allInstalled: false, dependencies: {} }),
-  installBackendDeps: async () => ({ success: false, error: "stub" }),
-  warmupBackend: async () => ({ success: false, error: "stub" }),
-});
-
-mock.module("../../src/utils/backend", mockFactory);
-mock.module(backendModulePath, mockFactory);
-const { pdfToImages } = await import("../../src/tools/pdf-to-images");
-mock.restore();
+import { describe, expect, it } from "bun:test";
+import { pdfToImages } from "../../src/tools/pdf-to-images";
 
 describe("pdf-to-images tool branch coverage", () => {
-  it("maps backend success payload", async () => {
-    backendMode = "success";
-
+  it("returns failure when input PDF is missing", async () => {
     const result = await pdfToImages({
-      inputPath: "/tmp/in.pdf",
+      inputPath: "/tmp/missing.pdf",
       outputDir: "/tmp/out",
       pages: [1, 2],
     });
 
-    expect(result).toEqual({
-      success: true,
-      outputFiles: ["/tmp/out/page-1.png", "/tmp/out/page-2.png"],
-      totalImages: 2,
-    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error?.length).toBeGreaterThan(0);
+    }
   });
 
-  it("uses default error when backend omits error", async () => {
-    backendMode = "fallback";
-
+  it("returns failure with pages='all' path when file is missing", async () => {
     const result = await pdfToImages({
-      inputPath: "/tmp/in.pdf",
+      inputPath: "/tmp/missing-all.pdf",
       outputDir: "/tmp/out",
       pages: "all",
     });
 
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe("Unknown error");
-    }
   });
 });

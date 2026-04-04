@@ -1,35 +1,41 @@
-import { backendCompressPdf } from "../utils/backend";
+import mupdf from "mupdf";
 import type { CompressPDFInput, CompressPDFOutput } from "../model/models";
 
 export type { CompressPDFInput, CompressPDFOutput };
 
 /**
- * Compresses a PDF file using the Python backend (PyMuPDF)
- * Performs: garbage collection, image recompression, stream deflation, linearization
+ * Compresses a PDF file using MuPDF WASM
+ * Performs: garbage collection, image recompression, stream deflation, font compression
  * @param input - Input PDF path and output path
  * @returns Result with success status, file sizes, and compression ratio
  */
 export async function compressPDF(input: CompressPDFInput): Promise<CompressPDFOutput> {
   try {
-    const result = await backendCompressPdf({
-      input: input.inputPath,
-      output: input.outputPath,
-    });
+    const originalSize = Bun.file(input.inputPath).size;
+    const pdfBytes = await Bun.file(input.inputPath).arrayBuffer();
 
-    if (result.success) {
-      return {
-        success: true,
-        outputPath: result.outputPath,
-        originalSize: result.originalSize,
-        compressedSize: result.compressedSize,
-        compressionRatio: result.compressionRatio,
-      };
-    } else {
-      return {
-        success: false,
-        error: result.error || "Compression failed",
-      };
+    const doc = mupdf.Document.openDocument(pdfBytes, "application/pdf");
+    const pdfDoc = doc.asPDF();
+    if (!pdfDoc) {
+      return { success: false, error: "Not a valid PDF document" };
     }
+
+    const buf = pdfDoc.saveToBuffer(
+      "garbage=deduplicate,compress,compress-images,compress-fonts,clean,sanitize",
+    );
+    const compressed = buf.asUint8Array();
+    await Bun.write(input.outputPath, compressed);
+
+    const compressedSize = compressed.byteLength;
+    const ratio = originalSize > 0 ? (1 - compressedSize / originalSize) * 100 : 0;
+
+    return {
+      success: true,
+      outputPath: input.outputPath,
+      originalSize,
+      compressedSize,
+      compressionRatio: `${ratio.toFixed(2)}%`,
+    };
   } catch (error) {
     return {
       success: false,

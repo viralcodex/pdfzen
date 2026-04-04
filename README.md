@@ -6,12 +6,21 @@
 
 ## Installation
 
+### Quick install (macOS / Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/viralcodex/pdfzen/main/install.sh | bash
+```
+
+### Windows
+
+Download `pdfzen-windows-x64.exe` from the [latest release](https://github.com/viralcodex/pdfzen/releases/latest) and add it to your PATH.
+
+### From source
+
 Prerequisites:
 
 - Bun (latest recommended)
-- Python 3.10+
-
-Install project dependencies:
 
 ```bash
 bun install
@@ -19,7 +28,7 @@ bun install
 
 ## Setup
 
-First-time setup (creates Python virtual environment and installs backend dependencies):
+First-time setup (installs dependencies):
 
 ```bash
 bun run setup
@@ -27,21 +36,21 @@ bun run setup
 
 ## Usage
 
-Run the app (cross-platform):
+Run the app:
 
 ```bash
-bun run dev:all
+bun run dev
 ```
 
 Other commands:
 
 ```bash
-bun run setup         # Setup backend + frontend dependencies only
-bun run dev:ui        # Run UI only
-bun run dev:backend   # Run backend CLI
+bun run setup         # Install dependencies
+bun run build         # Build for distribution
+bun run build:release # Build standalone binaries for all platforms
 ```
 
-Install a global `pdfzen` command (macOS/Linux/Windows):
+Install a global `pdfzen` command (macOS/Linux):
 
 ```bash
 bun run install:global

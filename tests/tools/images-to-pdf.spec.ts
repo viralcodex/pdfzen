@@ -21,7 +21,7 @@ describe("images-to-pdf tool", () => {
     expect(result).toEqual(["ONE.PNG", "TWO.JPEG"]);
   });
 
-  it("validates missing and unsupported inputs before backend call", async () => {
+  it("validates missing and unsupported inputs before conversion", async () => {
     const { imagesToPDF } = await import("../../src/tools/images-to-pdf");
 
     const empty = await imagesToPDF({

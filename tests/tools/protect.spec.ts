@@ -33,7 +33,7 @@ describe("protect tool", () => {
     expect(unprotectedResult.success).toBe(false);
   });
 
-  it("accepts owner password path and reaches backend call", async () => {
+  it("accepts owner password path and reaches protect logic", async () => {
     const { protectPDF } = await import("../../src/tools/protect");
 
     const result = await protectPDF({

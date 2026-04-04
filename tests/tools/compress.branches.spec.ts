@@ -1,70 +1,37 @@
-import { describe, expect, it, mock } from "bun:test";
-
-const backendModulePath = new URL("../../src/utils/backend.ts", import.meta.url).pathname;
-
-let backendMode: "success" | "fallback" = "success";
-
-const backendCompressPdf = async () => {
-  if (backendMode === "success") {
-    return {
-      success: true,
-      outputPath: "/tmp/compressed.pdf",
-      originalSize: 1000,
-      compressedSize: 500,
-      compressionRatio: 50,
-    };
-  }
-
-  return {
-    success: false,
-  };
-};
-
-const mockFactory = () => ({
-  backendCompressPdf,
-  backendImagesToPdf: async () => ({ success: false, error: "stub" }),
-  backendPdfToImages: async () => ({ success: false, error: "stub" }),
-  backendProtectPdf: async () => ({ success: false, error: "stub" }),
-  callBackend: async () => ({ success: false, error: "stub" }),
-  checkBackendDeps: async () => ({ allInstalled: false, dependencies: {} }),
-  installBackendDeps: async () => ({ success: false, error: "stub" }),
-  warmupBackend: async () => ({ success: false, error: "stub" }),
-});
-
-mock.module("../../src/utils/backend", mockFactory);
-mock.module(backendModulePath, mockFactory);
-const { compressPDF } = await import("../../src/tools/compress");
-mock.restore();
+import { describe, expect, it } from "bun:test";
+import { compressPDF, formatFileSize } from "../../src/tools/compress";
 
 describe("compress tool branch coverage", () => {
-  it("maps backend success payload", async () => {
-    backendMode = "success";
-
+  it("returns failure for non-existent input file", async () => {
     const result = await compressPDF({
-      inputPath: "/tmp/in.pdf",
-      outputPath: "/tmp/out.pdf",
-    });
-
-    expect(result).toEqual({
-      success: true,
-      outputPath: "/tmp/compressed.pdf",
-      originalSize: 1000,
-      compressedSize: 500,
-      compressionRatio: "50",
-    });
-  });
-
-  it("uses default error when backend omits error", async () => {
-    backendMode = "fallback";
-
-    const result = await compressPDF({
-      inputPath: "/tmp/in.pdf",
+      inputPath: "/tmp/does-not-exist.pdf",
       outputPath: "/tmp/out.pdf",
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toBe("Compression failed");
+      expect(result.error?.length).toBeGreaterThan(0);
     }
+  });
+
+  it("handles unexpected thrown values in input access", async () => {
+    const result = await compressPDF({
+      get inputPath() {
+        throw new Error("bad-input-path");
+      },
+      outputPath: "/tmp/out.pdf",
+    } as unknown as Parameters<typeof compressPDF>[0]);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain("bad-input-path");
+    }
+  });
+
+  it("formats file sizes", () => {
+    expect(formatFileSize(512)).toBe("512.00 B");
+    expect(formatFileSize(1024)).toBe("1.00 KB");
+    expect(formatFileSize(1024 * 1024)).toBe("1.00 MB");
+    expect(formatFileSize(1024 * 1024 * 1024)).toBe("1.00 GB");
   });
 });

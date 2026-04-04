@@ -10,13 +10,6 @@ export type FocusableElement = {
 
 export interface Status { msg: string; type: StatusType };
 
-// ============ Backend Types ============
-export interface BackendResult {
-  success: boolean;
-  error?: string;
-  [key: string]: any;
-}
-
 // ============ Hook Options ============
 export interface FileListOptions {
   trackPageCount?: boolean;

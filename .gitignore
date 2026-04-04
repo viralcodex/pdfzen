@@ -4,7 +4,8 @@ node_modules
 # output
 out
 dist
-/release/*
+/release/artifacts
+/release/.build
 *.tgz
 
 # code coverage
@@ -24,7 +25,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .env.local
 
 # caches
-.eslintcache
 .cache
 *.tsbuildinfo
 
@@ -33,11 +33,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Finder (MacOS) folder config
 .DS_Store
-
-# Python virtual environment
-backend/.venv
-__pycache__
-*.pyc
 
 # Agent skills
 .agents
