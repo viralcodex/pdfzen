@@ -8,11 +8,11 @@ const outDir = resolve(projectDir, "release/artifacts");
 const buildDir = resolve(projectDir, "release/.build");
 
 const targets = [
-  { name: "darwin-arm64", bunTarget: "bun-darwin-arm64" },
-  { name: "darwin-x64", bunTarget: "bun-darwin-x64" },
-  { name: "linux-x64", bunTarget: "bun-linux-x64" },
-  { name: "linux-arm64", bunTarget: "bun-linux-arm64" },
-  { name: "windows-x64", bunTarget: "bun-windows-x64" },
+  { name: "darwin-arm64", bunTarget: "bun-darwin-arm64", platform: "darwin", arch: "arm64" },
+  { name: "darwin-x64", bunTarget: "bun-darwin-x64", platform: "darwin", arch: "x64" },
+  { name: "linux-x64", bunTarget: "bun-linux-x64", platform: "linux", arch: "x64" },
+  { name: "linux-arm64", bunTarget: "bun-linux-arm64", platform: "linux", arch: "arm64" },
+  { name: "windows-x64", bunTarget: "bun-windows-x64", platform: "win32", arch: "x64" },
 ] as const;
 
 const log = (msg: string) => console.log(`\x1b[34m→\x1b[0m ${msg}`);
@@ -50,7 +50,18 @@ async function compile(toBuild: typeof targets[number][]): Promise<void> {
     resolve(projectDir, "node_modules/mupdf/dist/mupdf-wasm.wasm"),
   ];
 
+  // Read bundled JS once — we patch the dynamic @opentui/core import per target
+  const bundledJs = await Bun.file(resolve(buildDir, "index.js")).text();
+
   for (const t of toBuild) {
+    // Replace dynamic import template literal with a static string for this target's platform
+    const patchedJs = bundledJs.replace(
+      /`@opentui\/core-\$\{process\.platform\}-\$\{process\.arch\}\/index\.ts`/g,
+      `"@opentui/core-${t.platform}-${t.arch}/index.ts"`,
+    );
+    const entryFile = resolve(buildDir, `index-${t.name}.js`);
+    await Bun.write(entryFile, patchedJs);
+
     const ext = t.name.startsWith("windows") ? ".exe" : "";
     const outFile = resolve(outDir, `pdfzen-${t.name}${ext}`);
     log(`Compiling ${t.name}...`);
@@ -63,7 +74,7 @@ async function compile(toBuild: typeof targets[number][]): Promise<void> {
         `--outfile=${outFile}`,
         "--minify",
         ...embedFiles.map((f) => `--embed=${f}`),
-        resolve(buildDir, "index.js"),
+        entryFile,
       ],
       { cwd: projectDir, stdin: "inherit", stdout: "inherit", stderr: "inherit" },
     );
