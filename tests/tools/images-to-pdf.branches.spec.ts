@@ -1,66 +1,42 @@
-import { describe, expect, it, mock } from "bun:test";
-
-const backendModulePath = new URL("../../src/utils/backend.ts", import.meta.url).pathname;
-
-let backendMode: "success" | "fallback" = "success";
-
-const backendImagesToPdf = async () => {
-  if (backendMode === "success") {
-    return {
-      success: true,
-      outputPath: "/tmp/from-images.pdf",
-      totalPages: 2,
-    };
-  }
-
-  return {
-    success: false,
-  };
-};
-
-const mockFactory = () => ({
-  backendCompressPdf: async () => ({ success: false, error: "stub" }),
-  backendImagesToPdf,
-  backendPdfToImages: async () => ({ success: false, error: "stub" }),
-  backendProtectPdf: async () => ({ success: false, error: "stub" }),
-  callBackend: async () => ({ success: false, error: "stub" }),
-  checkBackendDeps: async () => ({ allInstalled: false, dependencies: {} }),
-  installBackendDeps: async () => ({ success: false, error: "stub" }),
-  warmupBackend: async () => ({ success: false, error: "stub" }),
-});
-
-mock.module("../../src/utils/backend", mockFactory);
-mock.module(backendModulePath, mockFactory);
-const { imagesToPDF } = await import("../../src/tools/images-to-pdf");
-mock.restore();
+import { describe, expect, it } from "bun:test";
+import { imagesToPDF, filterValidImages } from "../../src/tools/images-to-pdf";
 
 describe("images-to-pdf tool branch coverage", () => {
-  it("maps backend success payload", async () => {
-    backendMode = "success";
-
+  it("rejects empty input paths", async () => {
     const result = await imagesToPDF({
-      inputPaths: ["one.jpg", "two.png"],
+      inputPaths: [],
       outputPath: "/tmp/out.pdf",
     });
-
-    expect(result).toEqual({
-      success: true,
-      outputPath: "/tmp/from-images.pdf",
-      totalPages: 2,
-    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("No images provided");
   });
 
-  it("uses default error when backend omits error", async () => {
-    backendMode = "fallback";
-
+  it("rejects all-invalid image paths", async () => {
     const result = await imagesToPDF({
-      inputPaths: ["one.jpg"],
+      inputPaths: ["one.gif", "two.bmp"],
       outputPath: "/tmp/out.pdf",
     });
-
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe("Unknown error");
-    }
+    expect(result.error).toBe("No valid images provided");
+  });
+
+  it("returns failure when valid image paths do not exist", async () => {
+    const result = await imagesToPDF({
+      inputPaths: ["/tmp/nope.jpg"],
+      outputPath: "/tmp/out.pdf",
+      pageSize: "fit",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("filters supported image extensions", () => {
+    const result = filterValidImages([
+      "one.png",
+      "two.jpg",
+      "three.jpeg",
+      "four.gif",
+      "five.pdf",
+    ]);
+    expect(result).toEqual(["one.png", "two.jpg", "three.jpeg"]);
   });
 });

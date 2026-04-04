@@ -33,5 +33,5 @@ jobs:
       - name: Typecheck
         run: bunx tsc --noEmit
 
-      - name: Python syntax check
-        run: python3 -m py_compile backend/pdfzen_backend.py
+      - name: Test
+        run: bun test

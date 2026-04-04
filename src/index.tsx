@@ -14,8 +14,6 @@ import { ProtectUI } from "./components/protect";
 import { DecryptUI } from "./components/decrypt";
 import { toolsMenu } from "./constants/constants";
 import Hero from "./components/hero";
-import { warmupBackend } from "./utils/backend";
-import { onMount } from "solid-js";
 
 // Static tool component mapping - defined outside render for performance
 const toolComponents: Record<string, () => any> = {
@@ -35,13 +33,7 @@ render(() => {
   const [escapeCount, setEscapeCount] = createSignal(0);
   let escapeTimer: ReturnType<typeof setTimeout> | null = null;
 
-  onMount(() => {
-    const timer = setTimeout(() => {
-      void warmupBackend();
-    }, 300);
 
-    return () => clearTimeout(timer);
-  });
 
   const getToolName = (command: string) =>
     toolsMenu.find((t) => t.command === command)?.name || command;
