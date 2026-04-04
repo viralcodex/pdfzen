@@ -1,4 +1,4 @@
-import mupdf from "mupdf";
+import mupdf from "../utils/mupdf";
 import { mkdir } from "fs/promises";
 import { join, basename } from "path";
 import type { PDFToImagesInput, PDFToImagesOutput } from "../model/models";

@@ -1,18 +1,17 @@
 import solidTransformPlugin from "@opentui/solid/bun-plugin";
-import { mkdir, readdir, rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const projectDir = resolve(import.meta.dir, "..");
 const distDir = resolve(projectDir, "dist");
 const outDir = resolve(projectDir, "release/artifacts");
-const buildDir = resolve(projectDir, "release/.build");
 
 const targets = [
-  { name: "darwin-arm64", bunTarget: "bun-darwin-arm64", platform: "darwin", arch: "arm64" },
-  { name: "darwin-x64", bunTarget: "bun-darwin-x64", platform: "darwin", arch: "x64" },
-  { name: "linux-x64", bunTarget: "bun-linux-x64", platform: "linux", arch: "x64" },
-  { name: "linux-arm64", bunTarget: "bun-linux-arm64", platform: "linux", arch: "arm64" },
-  { name: "windows-x64", bunTarget: "bun-windows-x64", platform: "win32", arch: "x64" },
+  { name: "darwin-arm64", bunTarget: "bun-darwin-arm64" },
+  { name: "darwin-x64", bunTarget: "bun-darwin-x64" },
+  { name: "linux-x64", bunTarget: "bun-linux-x64" },
+  { name: "linux-arm64", bunTarget: "bun-linux-arm64" },
+  { name: "windows-x64", bunTarget: "bun-windows-x64" },
 ] as const;
 
 const log = (msg: string) => console.log(`\x1b[34m→\x1b[0m ${msg}`);
@@ -43,43 +42,28 @@ async function bundle(outdir: string): Promise<void> {
 async function compile(toBuild: typeof targets[number][]): Promise<void> {
   await mkdir(outDir, { recursive: true });
 
-  // Collect external assets to embed (.wasm, .scm)
-  const entries = await readdir(buildDir);
-  const embedFiles = [
-    ...entries.filter((e) => e.endsWith(".wasm") || e.endsWith(".scm")).map((e) => resolve(buildDir, e)),
-    resolve(projectDir, "node_modules/mupdf/dist/mupdf-wasm.wasm"),
-  ];
-
-  // Read bundled JS once — we patch the dynamic @opentui/core import per target
-  const bundledJs = await Bun.file(resolve(buildDir, "index.js")).text();
-
   for (const t of toBuild) {
-    // Replace dynamic import template literal with a static string for this target's platform
-    const patchedJs = bundledJs.replace(
-      /`@opentui\/core-\$\{process\.platform\}-\$\{process\.arch\}\/index\.ts`/g,
-      `"@opentui/core-${t.platform}-${t.arch}/index.ts"`,
-    );
-    const entryFile = resolve(buildDir, `index-${t.name}.js`);
-    await Bun.write(entryFile, patchedJs);
-
     const ext = t.name.startsWith("windows") ? ".exe" : "";
     const outFile = resolve(outDir, `pdfzen-${t.name}${ext}`);
     log(`Compiling ${t.name}...`);
 
-    const proc = Bun.spawn(
-      [
-        "bun", "build", "--compile",
-        "--no-compile-autoload-bunfig",
-        `--target=${t.bunTarget}`,
-        `--outfile=${outFile}`,
-        "--minify",
-        ...embedFiles.map((f) => `--embed=${f}`),
-        entryFile,
-      ],
-      { cwd: projectDir, stdin: "inherit", stdout: "inherit", stderr: "inherit" },
-    );
+    const result = await Bun.build({
+      entrypoints: [resolve(projectDir, "src/index.tsx")],
+      target: "bun",
+      minify: true,
+      sourcemap: "linked",
+      plugins: [solidTransformPlugin],
+      compile: {
+        target: t.bunTarget,
+        outfile: outFile,
+        autoloadBunfig: false,
+      },
+    });
 
-    if ((await proc.exited) !== 0) die(`Failed to compile ${t.name}`);
+    if (!result.success) {
+      for (const l of result.logs) console.error(l);
+      die(`Failed to compile ${t.name}`);
+    }
     ok(t.name);
   }
 
@@ -93,11 +77,9 @@ const arg = process.argv[2];
 if (!arg || arg === "dev") {
   await bundle(distDir);
 } else if (arg === "release") {
-  await bundle(buildDir);
   await compile([...targets]);
 } else {
   const match = targets.filter((t) => t.name === arg);
   if (match.length === 0) die(`Unknown target: ${arg}\nUsage: bun run build [dev|release|${targets.map((t) => t.name).join("|")}]`);
-  await bundle(buildDir);
   await compile(match);
 }

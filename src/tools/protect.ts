@@ -1,4 +1,4 @@
-import mupdf from "mupdf";
+import mupdf from "../utils/mupdf";
 import type { ProtectPDFInput, ProtectPDFOutput } from "../model/models";
 
 export type { ProtectPDFInput, ProtectPDFOutput };

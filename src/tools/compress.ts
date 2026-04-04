@@ -1,4 +1,4 @@
-import mupdf from "mupdf";
+import mupdf from "../utils/mupdf";
 import type { CompressPDFInput, CompressPDFOutput } from "../model/models";
 
 export type { CompressPDFInput, CompressPDFOutput };
