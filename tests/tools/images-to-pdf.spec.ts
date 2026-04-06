@@ -4,13 +4,7 @@ describe("images-to-pdf tool", () => {
   it("filters supported image extensions", async () => {
     const { filterValidImages } = await import("../../src/tools/images-to-pdf");
 
-    const result = filterValidImages([
-      "one.png",
-      "two.jpg",
-      "three.jpeg",
-      "four.gif",
-      "five.pdf",
-    ]);
+    const result = filterValidImages(["one.png", "two.jpg", "three.jpeg", "four.gif", "five.pdf"]);
 
     expect(result).toEqual(["one.png", "two.jpg", "three.jpeg"]);
   });

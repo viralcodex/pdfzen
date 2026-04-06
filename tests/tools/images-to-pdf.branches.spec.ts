@@ -30,13 +30,7 @@ describe("images-to-pdf tool branch coverage", () => {
   });
 
   it("filters supported image extensions", () => {
-    const result = filterValidImages([
-      "one.png",
-      "two.jpg",
-      "three.jpeg",
-      "four.gif",
-      "five.pdf",
-    ]);
+    const result = filterValidImages(["one.png", "two.jpg", "three.jpeg", "four.gif", "five.pdf"]);
     expect(result).toEqual(["one.png", "two.jpg", "three.jpeg"]);
   });
 });

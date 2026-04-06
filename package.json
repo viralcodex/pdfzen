@@ -11,7 +11,7 @@
     "build:release": "bun run scripts/build.ts release",
     "test": "bun test",
     "lint": "oxlint .",
-    "format": "oxfmt ."
+    "format": "oxfmt --write ."
   },
   "dependencies": {
     "@opentui/core": "^0.1.74",
@@ -23,11 +23,11 @@
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/preset-typescript": "^7.28.5",
+    "@types/bun": "latest",
+    "@types/node": "^25.2.1",
     "babel-preset-solid": "1.9.9",
     "oxfmt": "^0.28.0",
-    "oxlint": "^1.43.0",
-    "@types/bun": "latest",
-    "@types/node": "^25.2.1"
+    "oxlint": "^1.43.0"
   },
   "peerDependencies": {
     "typescript": "^5"

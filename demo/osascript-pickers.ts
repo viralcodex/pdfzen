@@ -6,13 +6,12 @@ import { $ } from "bun";
 // const savePath = await saveFileDialog("output.png");
 
 export async function pickFiles(): Promise<string[]> {
-  const script = 
-  `set theFiles to choose file of type {{{type}}} with prompt "Select files" with multiple selections allowed
+  const script = `set theFiles to choose file of type {{{type}}} with prompt "Select files" with multiple selections allowed
     set output to ""
     repeat with f in theFiles
       set output to output & POSIX path of f & "\\n"
     end repeat
-    return output`
+    return output`;
 
   const result = await $`osascript -e ${script.replace("{{{type}}}", "public.item")}`.text();
   return result.trim().split("\n").filter(Boolean);

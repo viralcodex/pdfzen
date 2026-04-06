@@ -8,7 +8,10 @@ export type FocusableElement = {
   canFocus?: () => boolean;
 };
 
-export interface Status { msg: string; type: StatusType };
+export interface Status {
+  msg: string;
+  type: StatusType;
+}
 
 // ============ Hook Options ============
 export interface FileListOptions {

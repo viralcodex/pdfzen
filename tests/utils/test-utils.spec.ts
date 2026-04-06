@@ -1,13 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { stat } from "fs/promises";
 import { join } from "path";
-import {
-  cleanupTempDir,
-  createPdf,
-  createPng,
-  createTempDir,
-  getPdfPageCount,
-} from "./test-utils";
+import { cleanupTempDir, createPdf, createPng, createTempDir, getPdfPageCount } from "./test-utils";
 
 const tempDirs: string[] = [];
 

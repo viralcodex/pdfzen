@@ -37,11 +37,7 @@ describe("protect tool branch coverage", () => {
   });
 
   it("returns failure when unprotecting a missing file", async () => {
-    const result = await unprotectPDF(
-      "/tmp/missing-protected.pdf",
-      "/tmp/unprotected.pdf",
-      "pw",
-    );
+    const result = await unprotectPDF("/tmp/missing-protected.pdf", "/tmp/unprotected.pdf", "pw");
     expect(result.success).toBe(false);
   });
 

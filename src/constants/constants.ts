@@ -30,13 +30,11 @@ export const EmptyBorderChars = {
   horizontal: "",
 };
 
-
 export const STATUS_COLORS: Record<StatusType, string> = {
   error: "red",
   success: "green",
   info: "white",
 };
-
 
 export const osaScript = `set theFiles to choose file of type {{{type}}} with prompt "Select files" with multiple selections allowed
 set output to ""

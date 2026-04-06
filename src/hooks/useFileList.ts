@@ -54,7 +54,8 @@ export function useFileList(options: FileListOptions = {}) {
 
     pageCountCache.set(file, pages);
 
-    if (requestId === pageCountRequestId) { // Ensure this is the latest request
+    if (requestId === pageCountRequestId) {
+      // Ensure this is the latest request
       setPageCount(pages);
     }
 
@@ -78,11 +79,7 @@ export function useFileList(options: FileListOptions = {}) {
       const { valid, error } = await validator(cleanPath);
 
       if (!valid) {
-        setStatus(
-          fromPaste
-            ? READY_STATUS
-            : { msg: error || "Invalid file", type: "error" },
-        );
+        setStatus(fromPaste ? READY_STATUS : { msg: error || "Invalid file", type: "error" });
         return false;
       }
 

@@ -66,5 +66,4 @@ describe("protect tool", () => {
       expect(result.error).toContain("bad-password-getter");
     }
   });
-
 });

@@ -16,7 +16,10 @@ const targets = [
 
 const log = (msg: string) => console.log(`\x1b[34m→\x1b[0m ${msg}`);
 const ok = (msg: string) => console.log(`\x1b[32m✓\x1b[0m ${msg}`);
-const die = (msg: string): never => { console.error(`\x1b[31m✗\x1b[0m ${msg}`); process.exit(1); };
+const die = (msg: string): never => {
+  console.error(`\x1b[31m✗\x1b[0m ${msg}`);
+  process.exit(1);
+};
 
 async function bundle(outdir: string): Promise<void> {
   log("Bundling...");
@@ -39,7 +42,7 @@ async function bundle(outdir: string): Promise<void> {
   ok(`Bundle → ${outdir}`);
 }
 
-async function compile(toBuild: typeof targets[number][]): Promise<void> {
+async function compile(toBuild: (typeof targets)[number][]): Promise<void> {
   await mkdir(outDir, { recursive: true });
 
   for (const t of toBuild) {
@@ -80,6 +83,9 @@ if (!arg || arg === "dev") {
   await compile([...targets]);
 } else {
   const match = targets.filter((t) => t.name === arg);
-  if (match.length === 0) die(`Unknown target: ${arg}\nUsage: bun run build [dev|release|${targets.map((t) => t.name).join("|")}]`);
+  if (match.length === 0)
+    die(
+      `Unknown target: ${arg}\nUsage: bun run build [dev|release|${targets.map((t) => t.name).join("|")}]`,
+    );
   await compile(match);
 }

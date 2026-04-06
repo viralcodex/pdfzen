@@ -22,9 +22,7 @@ export async function createPdf(filePath: string, pages = 1): Promise<void> {
   await Bun.write(filePath, bytes);
 }
 
-export async function getPdfPageCount(
-  filePath: string | undefined,
-): Promise<number> {
+export async function getPdfPageCount(filePath: string | undefined): Promise<number> {
   if (!filePath) return 0;
   const bytes = await Bun.file(filePath).arrayBuffer();
   const pdf = await PDFDocument.load(bytes);
@@ -33,7 +31,8 @@ export async function getPdfPageCount(
 
 export async function createPng(filePath: string): Promise<void> {
   // 1x1 transparent PNG
-  const base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5h7n8AAAAASUVORK5CYII=";
+  const base64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5h7n8AAAAASUVORK5CYII=";
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
   await Bun.write(filePath, bytes);
 }

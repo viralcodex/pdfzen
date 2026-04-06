@@ -28,9 +28,7 @@ export async function pdfToImages(input: PDFToImagesInput): Promise<PDFToImagesO
     // Determine which pages to convert (input is 1-based)
     let pageIndices: number[];
     if (input.pages && input.pages !== "all") {
-      pageIndices = input.pages
-        .filter((p) => p >= 1 && p <= totalPages)
-        .map((p) => p - 1);
+      pageIndices = input.pages.filter((p) => p >= 1 && p <= totalPages).map((p) => p - 1);
     } else {
       pageIndices = Array.from({ length: totalPages }, (_, i) => i);
     }

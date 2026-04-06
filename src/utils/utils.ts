@@ -1,11 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import { join, basename } from "path";
-import {
-  linuxScript,
-  osaScript,
-  OUTPUT_DIR,
-  windowsScript,
-} from "../constants/constants";
+import { linuxScript, osaScript, OUTPUT_DIR, windowsScript } from "../constants/constants";
 import { mkdir, stat } from "fs/promises";
 import type { MouseEvent } from "@opentui/core";
 
@@ -29,10 +24,7 @@ export const chunkArray = (array: Array<any>, chunkSize: number) => {
   );
 };
 
-export const getOutputPath = async (
-  prefix: string,
-  inputFile?: string,
-): Promise<string> => {
+export const getOutputPath = async (prefix: string, inputFile?: string): Promise<string> => {
   await ensureOutputDir();
   const baseName = inputFile ? basename(inputFile, ".pdf") : "";
 
@@ -42,9 +34,7 @@ export const getOutputPath = async (
     if (cached) return cached; // Reuse same output file
   }
 
-  const fileName = baseName
-    ? `${baseName}-${prefix}.pdf`
-    : `${prefix}-${Date.now()}.pdf`;
+  const fileName = baseName ? `${baseName}-${prefix}.pdf` : `${prefix}-${Date.now()}.pdf`;
   const outputPath = join(OUTPUT_DIR, fileName);
 
   if (inputFile) outputCache.set(`${inputFile}:${prefix}`, outputPath);
@@ -148,15 +138,14 @@ export const handleFileExplorer = async (
   let cmd: string[];
 
   if (platform === "win32") {
-    const filter = fileType === "pdf"
-      ? "PDF files (*.pdf)|*.pdf"
-      : "Image files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg";
+    const filter =
+      fileType === "pdf"
+        ? "PDF files (*.pdf)|*.pdf"
+        : "Image files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg";
     const script = windowsScript.replace("{{type}}", filter);
     cmd = ["powershell", "-Command", script];
   } else if (platform === "darwin") {
-    const types = fileType === "pdf"
-      ? `"com.adobe.pdf"`
-      : `"public.png", "public.jpeg"`;
+    const types = fileType === "pdf" ? `"com.adobe.pdf"` : `"public.png", "public.jpeg"`;
     const script = osaScript.replace("{{type}}", types);
     cmd = ["osascript", "-e", script];
   } else {
@@ -181,9 +170,7 @@ export const handleFileExplorer = async (
  * Get platform-specific open command and arguments
  * Returns command and args separately to use with execFile (safe from injection)
  */
-const getPlatformOpenCommand = (
-  filePath: string,
-): { cmd: string; args: string[] } => {
+const getPlatformOpenCommand = (filePath: string): { cmd: string; args: string[] } => {
   const platform = process.platform;
   if (platform === "win32") {
     // Windows: use 'cmd' with /c start
@@ -203,8 +190,7 @@ export const closeFileTracking = (filePath: string) => {
   openedFiles.delete(filePath);
 };
 
-export const unescapePath = (path: string): string =>
-  path.replace(/\\(.)/g, "$1");
+export const unescapePath = (path: string): string => path.replace(/\\(.)/g, "$1");
 
 export const getPageCount = async (filePath: string): Promise<number> => {
   try {

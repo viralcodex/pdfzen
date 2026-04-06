@@ -33,8 +33,6 @@ render(() => {
   const [escapeCount, setEscapeCount] = createSignal(0);
   let escapeTimer: ReturnType<typeof setTimeout> | null = null;
 
-
-
   const getToolName = (command: string) =>
     toolsMenu.find((t) => t.command === command)?.name || command;
 

@@ -1,15 +1,7 @@
 import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
 import { deletePages } from "../tools/delete";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
-import {
-  ToolContainer,
-  Label,
-  FileList,
-  ButtonRow,
-  Button,
-  StatusBar,
-  TextInput,
-} from "./ui";
+import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar, TextInput } from "./ui";
 import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";

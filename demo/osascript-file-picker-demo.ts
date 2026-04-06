@@ -7,7 +7,7 @@ import { $ } from "bun";
 
 // Pick files (returns array of paths)
 async function pickFiles(types?: string[], multiple = true): Promise<string[]> {
-  const typeFilter = types ? ` of type {${types.map(t => `"${t}"`).join(", ")}}` : "";
+  const typeFilter = types ? ` of type {${types.map((t) => `"${t}"`).join(", ")}}` : "";
   const multiFlag = multiple ? " with multiple selections allowed" : "";
 
   const script = `

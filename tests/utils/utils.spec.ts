@@ -54,14 +54,14 @@ describe("utils", () => {
 
   const silenceConsoleMethod = (method: "warn" | "error") => {
     const original = console[method];
-    console[method] = (() => {}) as typeof console[typeof method];
+    console[method] = (() => {}) as (typeof console)[typeof method];
     return () => {
       console[method] = original;
     };
   };
 
   const mouseEvent = (button: number): import("@opentui/core").MouseEvent =>
-    ({ button } as unknown as import("@opentui/core").MouseEvent);
+    ({ button }) as unknown as import("@opentui/core").MouseEvent;
 
   const textStream = (text: string): ReadableStream<Uint8Array> =>
     new ReadableStream<Uint8Array>({
@@ -356,7 +356,9 @@ describe("utils", () => {
       await Bun.write(OUTPUT_DIR, "not-a-directory");
       await getOutputPath("mkdir-catch", "/tmp/input.pdf");
 
-      expect(warns.some((w) => String(w[0]).includes("Could not create output directory"))).toBe(true);
+      expect(warns.some((w) => String(w[0]).includes("Could not create output directory"))).toBe(
+        true,
+      );
     } finally {
       try {
         await rm(OUTPUT_DIR, { recursive: true, force: true });
@@ -371,5 +373,4 @@ describe("utils", () => {
       console.warn = originalWarn;
     }
   });
-
 });

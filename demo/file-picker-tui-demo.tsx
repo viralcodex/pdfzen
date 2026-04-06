@@ -11,21 +11,19 @@ import { basename } from "path";
 
 // ============= File Picker Utils =============
 
-async function openFilePicker(options: {
-  prompt?: string;
-  fileTypes?: string[];
-  multiple?: boolean;
-} = {}): Promise<string[]> {
-  const {
-    prompt = "Select files",
-    fileTypes,
-    multiple = true,
-  } = options;
+async function openFilePicker(
+  options: {
+    prompt?: string;
+    fileTypes?: string[];
+    multiple?: boolean;
+  } = {},
+): Promise<string[]> {
+  const { prompt = "Select files", fileTypes, multiple = true } = options;
 
   let script = `choose file with prompt "${prompt}"`;
 
   if (fileTypes && fileTypes.length > 0) {
-    const types = fileTypes.map(t => `"${t}"`).join(", ");
+    const types = fileTypes.map((t) => `"${t}"`).join(", ");
     script += ` of type {${types}}`;
   }
 
@@ -52,7 +50,10 @@ async function openFilePicker(options: {
 
   try {
     const result = await $`osascript -e ${fullScript}`.text();
-    return result.trim().split("\n").filter(f => f.length > 0);
+    return result
+      .trim()
+      .split("\n")
+      .filter((f) => f.length > 0);
   } catch {
     return [];
   }
@@ -108,7 +109,7 @@ function FilePickerDemo() {
             multiple: true,
           });
           if (files.length > 0) {
-            setSelectedFiles(prev => [...prev, ...files]);
+            setSelectedFiles((prev) => [...prev, ...files]);
             setStatus(`Added ${files.length} PDF file(s)`);
           } else {
             setStatus("Selection cancelled");
@@ -122,7 +123,7 @@ function FilePickerDemo() {
             multiple: true,
           });
           if (files.length > 0) {
-            setSelectedFiles(prev => [...prev, ...files]);
+            setSelectedFiles((prev) => [...prev, ...files]);
             setStatus(`Added ${files.length} image file(s)`);
           } else {
             setStatus("Selection cancelled");
@@ -162,11 +163,11 @@ function FilePickerDemo() {
     switch (event.name) {
       case "left":
       case "h":
-        setFocusedButton(prev => Math.max(0, prev - 1));
+        setFocusedButton((prev) => Math.max(0, prev - 1));
         break;
       case "right":
       case "l":
-        setFocusedButton(prev => Math.min(buttons.length - 1, prev + 1));
+        setFocusedButton((prev) => Math.min(buttons.length - 1, prev + 1));
         break;
       case "return": {
         const btn = buttons[focusedButton()];
@@ -216,10 +217,7 @@ function FilePickerDemo() {
               paddingRight={2}
               onMouseDown={() => handleAction(btn.key)}
             >
-              <text
-                fg={focusedButton() === index() ? "#00d4ff" : "#888"}
-                content={btn.label}
-              />
+              <text fg={focusedButton() === index() ? "#00d4ff" : "#888"} content={btn.label} />
             </box>
           )}
         </For>
@@ -231,14 +229,7 @@ function FilePickerDemo() {
       </box>
 
       {/* Selected Files */}
-      <box
-        border
-        borderColor="#333"
-        width={60}
-        minHeight={8}
-        flexDirection="column"
-        padding={1}
-      >
+      <box border borderColor="#333" width={60} minHeight={8} flexDirection="column" padding={1}>
         <text
           fg="#00d4ff"
           attributes={TextAttributes.BOLD}
@@ -266,7 +257,10 @@ function FilePickerDemo() {
 
       {/* Help */}
       <box padding={1}>
-        <text fg="#555" content="Left/Right Navigate | Enter Select | 1-3 Quick | C Clear | Q Quit" />
+        <text
+          fg="#555"
+          content="Left/Right Navigate | Enter Select | 1-3 Quick | C Clear | Q Quit"
+        />
       </box>
     </box>
   );
