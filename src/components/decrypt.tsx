@@ -190,7 +190,7 @@ export function DecryptUI() {
         />
         <Button
           label="Open Output"
-          color="magenta"
+          color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>
               fl.setStatus({ msg: "Failed to open folder", type: "error" }),

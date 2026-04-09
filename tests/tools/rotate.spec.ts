@@ -36,6 +36,29 @@ describe("rotate tool", () => {
     expect(rotations.map((r) => r.rotation)).toEqual([90, 90]);
   });
 
+  it("rotates all pages when pages are omitted", async () => {
+    const { rotatePDF, getPDFRotations } = await import("../../src/tools/rotate");
+    tempDir = await createTempDir("pdfzen-rotate-default-pages-");
+
+    const input = join(tempDir, "input.pdf");
+    const output = join(tempDir, "rotated.pdf");
+    await createPdf(input, 3);
+
+    const result = await rotatePDF({
+      inputPath: input,
+      outputPath: output,
+      rotation: 270,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.rotatedPages).toBe(3);
+    }
+
+    const rotations = await getPDFRotations(output);
+    expect(rotations.map((rotation) => rotation.rotation)).toEqual([270, 270, 270]);
+  });
+
   it("rotates only selected valid pages", async () => {
     const { rotatePDF, getPDFRotations } = await import("../../src/tools/rotate");
     tempDir = await createTempDir("pdfzen-rotate-selected-");
@@ -72,6 +95,24 @@ describe("rotate tool", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("returns an unknown error when a non-Error value is thrown", async () => {
+    const { rotatePDF } = await import("../../src/tools/rotate");
+
+    const result = await rotatePDF({
+      get inputPath() {
+        throw "bad-input-path";
+      },
+      outputPath: "/tmp/rotated.pdf",
+      rotation: 90,
+      pages: "all",
+    } as unknown as Parameters<typeof rotatePDF>[0]);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Unknown error occurred");
+    }
   });
 
   it("throws clear error for invalid PDF in getPDFRotations", async () => {

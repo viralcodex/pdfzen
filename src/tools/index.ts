@@ -1,6 +1,6 @@
 // Export all PDF tools for easy importing
 export * from "./merge";
-export * from "./split";
+export * from "./split-extract";
 export * from "./compress";
 export * from "./rotate";
 export * from "./delete";

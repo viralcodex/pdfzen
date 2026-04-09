@@ -1,7 +1,7 @@
 // ============ Shared Types ============
 export type StatusType = "info" | "error" | "success";
 
-export type FocusableElement = {
+export interface FocusableElement {
   id: string;
   type: "button" | "input" | "list-item" | "toggle" | "tool";
   onEnter?: () => void;
@@ -130,11 +130,15 @@ export interface RotatePDFOutput {
   error?: string;
 }
 
+export type SplitMode = "at" | "range" | "every";
+
+export type ExtractMode = "range" | "every";
+
 // Split
 export interface SplitPDFInput {
   inputPath: string;
   outputDir: string;
-  splitMode: "splitAt" | "range" | "every";
+  splitMode: SplitMode;
   // For 'splitAt' mode: 3 - split into pages 1-3 and pages 4-end
   // For 'range' mode: [1, 5] - extract pages 1-5
   // For 'every' mode: 2 - split every 2 pages
@@ -146,4 +150,19 @@ export interface SplitPDFOutput {
   outputFiles?: string[];
   error?: string;
   totalFiles?: number;
+}
+
+//Extract
+export interface ExtractPDFInput {
+  inputPath: string;
+  outputDir: string;
+  extractMode: ExtractMode;
+  extractValue: number | number[];
+}
+
+export interface ExtractPDFOutput {
+  success: boolean;
+  outputFiles?:string[];
+  error?:string;
+  totalFiles?:number
 }

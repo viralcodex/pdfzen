@@ -6,7 +6,7 @@ import { createSignal } from "solid-js";
 import { MergeUI } from "./components/merge";
 import { CompressUI } from "./components/compress";
 import { RotateUI } from "./components/rotate";
-import { SplitUI } from "./components/split";
+import { SplitExtractUI } from "./components/split-extract";
 import { DeleteUI } from "./components/delete";
 import { PDFToImagesUI } from "./components/pdf-to-images";
 import { ImagesToPDFUI } from "./components/images-to-pdf";
@@ -18,7 +18,7 @@ import Hero from "./components/hero";
 // Static tool component mapping - defined outside render for performance
 const toolComponents: Record<string, () => any> = {
   merge: MergeUI,
-  split: SplitUI,
+  splitExtract: SplitExtractUI,
   compress: CompressUI,
   rotate: RotateUI,
   delete: DeleteUI,

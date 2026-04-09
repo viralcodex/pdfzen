@@ -9,6 +9,9 @@ import {
   clearOpenedFiles,
   closeFileTracking,
   chunkArray,
+  formatFileSize,
+  formatModifiedLabel,
+  getFormattedFileMetadata,
   getOutputDir,
   getOutputPath,
   getPageCount,
@@ -74,6 +77,13 @@ describe("utils", () => {
   it("chunks arrays by size", () => {
     expect(chunkArray([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
     expect(chunkArray([], 3)).toEqual([]);
+  });
+
+  it("formats file sizes and modified timestamps", () => {
+    expect(formatFileSize(512)).toBe("512 B");
+    expect(formatFileSize(1536)).toBe("1.5 KB");
+    expect(formatModifiedLabel(new Date())).toMatch(/^updated today /);
+    expect(formatModifiedLabel(new Date(2020, 0, 2, 12, 0, 0))).toMatch(/^Updated /);
   });
 
   it("unescapes shell-escaped paths", () => {
@@ -150,6 +160,28 @@ describe("utils", () => {
 
     expect(await getPageCount(pdfPath)).toBe(3);
     expect(await getPageCount(txtPath)).toBe(0);
+  });
+
+  it("returns formatted file metadata with optional page counts", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "pdfzen-metadata-"));
+    tempDirs.push(dir);
+
+    const pdfPath = join(dir, "meta.pdf");
+    await createPdf(pdfPath, 2);
+
+    const withPageCount = await getFormattedFileMetadata(pdfPath, {
+      includePageCount: true,
+    });
+    const withoutPageCount = await getFormattedFileMetadata(pdfPath);
+    const missing = await getFormattedFileMetadata(join(dir, "missing.pdf"));
+
+    expect(withPageCount.pageCount).toBe(2);
+    expect(withPageCount.size.length).toBeGreaterThan(0);
+    expect(withPageCount.modified).toMatch(/^(updated today|Updated )/);
+
+    expect(withoutPageCount.pageCount).toBeNull();
+    expect(missing.modified).toBeNull();
+    expect(missing.pageCount).toBeNull();
   });
 
   it("creates output paths and reuses cached output for same input+prefix", async () => {

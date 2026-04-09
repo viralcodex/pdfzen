@@ -200,7 +200,7 @@ export function ImagesToPDFUI() {
         />
         <Button
           label="Open Output"
-          color="#da7cff"
+          color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>
               fl.setStatus({ msg: "Failed to open folder", type: "error" }),
