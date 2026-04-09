@@ -6,7 +6,7 @@ export const OUTPUT_DIR = path.join(homedir(), "Documents", "PDFZen");
 
 export const toolsMenu = [
   { name: "Merge PDFs", command: "merge" },
-  { name: "Split PDF", command: "split" },
+  { name: "Split/Extract PDF", command: "splitExtract" },
   { name: "Compress PDF", command: "compress" },
   { name: "Rotate PDF", command: "rotate" },
   { name: "Delete Pages", command: "delete" },

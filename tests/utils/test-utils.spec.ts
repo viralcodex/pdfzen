@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { stat } from "fs/promises";
 import { join } from "path";
-import { cleanupTempDir, createPdf, createPng, createTempDir, getPdfPageCount } from "./test-utils";
+import {
+  cleanupTempDir,
+  createJpg,
+  createPdf,
+  createPng,
+  createTempDir,
+  getPdfPageCount,
+} from "./test-utils";
 
 const tempDirs: string[] = [];
 
@@ -52,5 +59,18 @@ describe("test-utils", () => {
     expect(bytes[1]).toBe(0x50);
     expect(bytes[2]).toBe(0x4e);
     expect(bytes[3]).toBe(0x47);
+  });
+
+  it("creates a valid jpg signature", async () => {
+    const dir = await createTempDir("pdfzen-test-utils-");
+    tempDirs.push(dir);
+
+    const jpgPath = join(dir, "pixel.jpg");
+    await createJpg(jpgPath);
+
+    const bytes = new Uint8Array(await Bun.file(jpgPath).arrayBuffer());
+    expect(bytes[0]).toBe(0xff);
+    expect(bytes[1]).toBe(0xd8);
+    expect(bytes[2]).toBe(0xff);
   });
 });

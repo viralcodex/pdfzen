@@ -10,7 +10,6 @@ import type { PDFToImagesInput, PDFToImagesOutput } from "../model/models";
  */
 export async function pdfToImages(input: PDFToImagesInput): Promise<PDFToImagesOutput> {
   try {
-    // Ensure output directory exists
     await mkdir(input.outputDir, { recursive: true });
 
     const pdfBytes = await Bun.file(input.inputPath).arrayBuffer();

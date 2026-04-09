@@ -36,3 +36,29 @@ export async function createPng(filePath: string): Promise<void> {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
   await Bun.write(filePath, bytes);
 }
+
+export async function createJpg(filePath: string): Promise<void> {
+  // 1x1 JPEG
+  const base64 =
+    "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDAREAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAHJAP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUCcf/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQMBAT8BJ//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIBAT8BJ//Z";
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  await Bun.write(filePath, bytes);
+}
+
+export async function withMockedOpenDocument<T>(
+  factory: () => unknown,
+  run: () => Promise<T>,
+): Promise<T> {
+  const { default: mupdf } = await import("../../src/utils/mupdf");
+  const originalOpenDocument = mupdf.Document.openDocument;
+
+  (mupdf.Document as unknown as { openDocument: typeof originalOpenDocument }).openDocument =
+    ((() => factory()) as unknown) as typeof originalOpenDocument;
+
+  try {
+    return await run();
+  } finally {
+    (mupdf.Document as unknown as { openDocument: typeof originalOpenDocument }).openDocument =
+      originalOpenDocument;
+  }
+}

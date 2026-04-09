@@ -60,4 +60,20 @@ describe("merge tool", () => {
     const result = await mergePDFs({ inputPaths: [valid, invalid], outputPath: output });
     expect(result.success).toBe(false);
   });
+
+  it("returns an unknown error when a non-Error value is thrown", async () => {
+    const { mergePDFs } = await import("../../src/tools/merge");
+
+    const result = await mergePDFs({
+      get inputPaths() {
+        throw "bad-input-paths";
+      },
+      outputPath: "/tmp/merged.pdf",
+    } as unknown as Parameters<typeof mergePDFs>[0]);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Unknown error occurred");
+    }
+  });
 });

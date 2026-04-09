@@ -104,6 +104,28 @@ describe("delete tool", () => {
     }
   });
 
+  it("deduplicates repeated pages before deleting", async () => {
+    const { deletePages } = await import("../../src/tools/delete");
+    tempDir = await createTempDir("pdfzen-delete-duplicates-");
+
+    const input = join(tempDir, "input.pdf");
+    const output = join(tempDir, "output.pdf");
+    await createPdf(input, 4);
+
+    const result = await deletePages({
+      inputPath: input,
+      outputPath: output,
+      pagesToDelete: [2, 2, 4],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.deletedPages).toBe(2);
+      expect(result.remainingPages).toBe(2);
+      expect(await getPdfPageCount(output)).toBe(2);
+    }
+  });
+
   it("returns failure when input PDF is missing", async () => {
     const { deletePages } = await import("../../src/tools/delete");
     tempDir = await createTempDir("pdfzen-delete-missing-");
@@ -115,5 +137,22 @@ describe("delete tool", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("returns an unknown error when a non-Error value is thrown", async () => {
+    const { deletePages } = await import("../../src/tools/delete");
+
+    const result = await deletePages({
+      get inputPath() {
+        throw "bad-input-path";
+      },
+      outputPath: "/tmp/output.pdf",
+      pagesToDelete: [1],
+    } as unknown as Parameters<typeof deletePages>[0]);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Unknown error occurred");
+    }
   });
 });

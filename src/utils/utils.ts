@@ -24,6 +24,55 @@ export const chunkArray = (array: Array<any>, chunkSize: number) => {
   );
 };
 
+export const formatFileSize = (bytes: number) => {
+  const units = ["B", "KB", "MB", "GB"];
+  let size = bytes;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+
+  const decimals = unitIndex === 0 ? 0 : 1;
+  return `${size.toFixed(decimals)} ${units[unitIndex]}`;
+};
+
+export const formatModifiedLabel = (date: Date) => {
+  const now = new Date();
+  const isSameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  if (isSameDay) {
+    const timeLabel = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    return `updated today ${timeLabel}`;
+  }
+
+  const dateLabel = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+  return `Updated ${dateLabel}`;
+};
+
+export const getFormattedFileMetadata = async (
+  filePath: string,
+  options: { includePageCount?: boolean } = {},
+) => {
+  const size = formatFileSize(Bun.file(filePath).size);
+  const fileStats = await stat(filePath).catch(() => null);
+  const modified = fileStats ? formatModifiedLabel(fileStats.mtime) : null;
+  const pageCount = options.includePageCount ? await getPageCount(filePath) : null;
+
+  return { size, modified, pageCount };
+};
+
 export const getOutputPath = async (prefix: string, inputFile?: string): Promise<string> => {
   await ensureOutputDir();
   const baseName = inputFile ? basename(inputFile, ".pdf") : "";

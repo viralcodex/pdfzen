@@ -1,6 +1,68 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
+import { join } from "path";
+import {
+  cleanupTempDir,
+  createPdf,
+  createTempDir,
+  getPdfPageCount,
+  withMockedOpenDocument,
+} from "../utils/test-utils";
+
+let tempDir = "";
+
+afterEach(async () => {
+  if (tempDir) {
+    await cleanupTempDir(tempDir);
+    tempDir = "";
+  }
+});
 
 describe("compress tool", () => {
+  it("compresses a valid pdf and writes the output", async () => {
+    const { compressPDF } = await import("../../src/tools/compress");
+    tempDir = await createTempDir("pdfzen-compress-");
+
+    const input = join(tempDir, "input.pdf");
+    const output = join(tempDir, "compressed.pdf");
+    await createPdf(input, 2);
+
+    const result = await compressPDF({
+      inputPath: input,
+      outputPath: output,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.outputPath).toBe(output);
+      expect(result.originalSize).toBeGreaterThan(0);
+      expect(result.compressedSize).toBeGreaterThan(0);
+      expect(result.compressionRatio).toMatch(/^-?\d+\.\d{2}%$/);
+      expect(await getPdfPageCount(output)).toBe(2);
+    }
+  });
+
+  it("rejects inputs that cannot be treated as pdf documents", async () => {
+    const { compressPDF } = await import("../../src/tools/compress");
+    tempDir = await createTempDir("pdfzen-compress-invalid-doc-");
+
+    const input = join(tempDir, "input.pdf");
+    await createPdf(input, 1);
+
+    const result = await withMockedOpenDocument(
+      () => ({ asPDF: () => null }),
+      () =>
+        compressPDF({
+        inputPath: input,
+        outputPath: join(tempDir, "out.pdf"),
+        }),
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe("Not a valid PDF document");
+    }
+  });
+
   it("returns a failure for a missing input file", async () => {
     const { compressPDF } = await import("../../src/tools/compress");
 
