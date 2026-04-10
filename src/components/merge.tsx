@@ -45,6 +45,12 @@ export function MergeUI() {
 
     // Register file list items and their action buttons
     fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}-open`,
+        type: "button",
+        onEnter: () => openFile(fl.files()[index]!),
+      });
+
       // Move up button
       nav.registerElement({
         id: `file-${index}-up`,
