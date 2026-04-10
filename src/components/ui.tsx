@@ -4,7 +4,7 @@ import { Show, Index, createSignal, createResource } from "solid-js";
 import type { JSX, Accessor, Setter } from "solid-js";
 import { EmptyBorderChars, STATUS_COLORS } from "../constants/constants";
 import type { StatusType } from "../model/models";
-import { getFormattedFileMetadata, handleFileExplorer } from "../utils/utils";
+import { getFormattedFileMetadata, handleFileExplorer, openFile } from "../utils/utils";
 
 // ============ Layout Components ============
 export function ToolContainer(props: { children: JSX.Element }) {
@@ -267,6 +267,7 @@ export function FileList(props: FileListProps) {
                   }),
               );
               const [rowHovered, setRowHovered] = createSignal(false);
+              const [openHovered, setOpenHovered] = createSignal(false);
               const [upHovered, setUpHovered] = createSignal(false);
               const [downHovered, setDownHovered] = createSignal(false);
               const [removeHovered, setRemoveHovered] = createSignal(false);
@@ -296,13 +297,23 @@ export function FileList(props: FileListProps) {
 
                 return parts.join(" • ");
               };
+
+              const isOpenHighlighted = () =>
+                props.focusedButton?.() === `file-${index}-open` || openHovered();
+
               const isUpHighlighted = () =>
-                canMoveUp() && (props.focusedButton?.() === `file-${index}-up` || upHovered());
+                canMoveUp() &&
+                (props.focusedButton?.() === `file-${index}-up` || upHovered());
+
               const isDownHighlighted = () =>
                 canMoveDown() &&
-                (props.focusedButton?.() === `file-${index}-down` || downHovered());
+                (props.focusedButton?.() === `file-${index}-down` ||
+                  downHovered());
+
               const isRemoveHighlighted = () =>
-                props.focusedButton?.() === `file-${index}-remove` || removeHovered();
+                props.focusedButton?.() === `file-${index}-remove` ||
+                removeHovered();
+              
               return (
                 <box
                   flexDirection="row"
@@ -333,7 +344,12 @@ export function FileList(props: FileListProps) {
                     minWidth={3}
                     content={`${index + 1}.`}
                   />
-                  <box flexDirection="column" flexGrow={1} flexShrink={1} minWidth={0}>
+                  <box
+                    flexDirection="column"
+                    flexGrow={1}
+                    flexShrink={1}
+                    minWidth={0}
+                  >
                     <text
                       fg={isRowHighlighted() ? "#ffffff" : "#ecf0f1"}
                       flexGrow={1}
@@ -351,6 +367,43 @@ export function FileList(props: FileListProps) {
                     />
                   </box>
                   <box flexDirection="row" columnGap={1} flexShrink={0}>
+                    <box
+                      border={["bottom"]}
+                      borderColor={
+                        isOpenHighlighted() ? "#ffd166" : "#d29a2e"
+                      }
+                      backgroundColor={
+                        isOpenHighlighted() ? "#5c4310" : "#3a2a0a"
+                      }
+                      customBorderChars={{
+                        ...EmptyBorderChars,
+                        horizontal: isOpenHighlighted() ? "▄" : "▂",
+                      }}
+                      onMouseDown={(e: any) => {
+                        e.stopPropagation?.();
+                        void openFile(file());
+                      }}
+                      onMouseOver={() => setOpenHovered(true)}
+                      onMouseOut={() => setOpenHovered(false)}
+                      height={1}
+                      paddingTop={1}
+                      paddingBottom={1}
+                      paddingLeft={2}
+                      paddingRight={2}
+                      minWidth={3}
+                      justifyContent="center"
+                      alignItems="center"
+                    >
+                      <text
+                        fg={isOpenHighlighted() ? "#fff4bf" : "#f0c674"}
+                        attributes={
+                          isOpenHighlighted()
+                            ? TextAttributes.BOLD
+                            : undefined
+                        }
+                        content={"↗"}
+                      />
+                    </box>
                     <Show when={props.showReorder && props.onMove}>
                       <box
                         border={["bottom"]}

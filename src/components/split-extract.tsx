@@ -1,7 +1,7 @@
 import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { useTerminalDimensions } from "@opentui/solid";
 import { extractPDF, splitPDF } from "../tools/split-extract";
-import { getOutputDir, openOutputFolder } from "../utils/utils";
+import { getOutputDir, openFile, openOutputFolder } from "../utils/utils";
 import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import {
@@ -180,6 +180,12 @@ export function SplitExtractUI() {
 
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}-open`,
+        type: "button",
+        onEnter: () => openFile(fl.files()[index]!),
+      });
+
       nav.registerElement({
         id: `file-${index}`,
         type: "list-item",

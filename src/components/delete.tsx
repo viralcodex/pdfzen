@@ -83,6 +83,12 @@ export function DeleteUI() {
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
+        id: `file-${index}-open`,
+        type: "button",
+        onEnter: () => openFile(fl.files()[index]!),
+      });
+
+      nav.registerElement({
         id: `file-${index}`,
         type: "list-item",
         onEnter: () => fl.selectFile(index),
