@@ -14,7 +14,7 @@ afterEach(async () => {
 describe("pdf-to-images tool", () => {
   it("converts all pages to png with default options", async () => {
     const { pdfToImages } = await import("../../src/tools/pdf-to-images");
-    tempDir = await createTempDir("pdfzen-pdf-to-images-png-");
+    tempDir = await createTempDir("tuidf-pdf-to-images-png-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "png-out");
@@ -41,7 +41,7 @@ describe("pdf-to-images tool", () => {
 
   it("converts selected pages to jpg", async () => {
     const { pdfToImages } = await import("../../src/tools/pdf-to-images");
-    tempDir = await createTempDir("pdfzen-pdf-to-images-jpg-");
+    tempDir = await createTempDir("tuidf-pdf-to-images-jpg-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "jpg-out");

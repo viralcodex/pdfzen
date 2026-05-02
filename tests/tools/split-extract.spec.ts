@@ -14,7 +14,7 @@ afterEach(async () => {
 describe("split tool", () => {
   it("splits every N pages", async () => {
     const { splitPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-split-");
+    tempDir = await createTempDir("tuidf-split-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -38,7 +38,7 @@ describe("split tool", () => {
 
   it("validates splitAt page range", async () => {
     const { splitPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-split-invalid-");
+    tempDir = await createTempDir("tuidf-split-invalid-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 3);
@@ -58,7 +58,7 @@ describe("split tool", () => {
 
   it("splits at a valid page into two files", async () => {
     const { splitPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-split-at-");
+    tempDir = await createTempDir("tuidf-split-at-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -81,7 +81,7 @@ describe("split tool", () => {
 
   it("uses the first array value when splitting at a page", async () => {
     const { splitPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-split-at-array-");
+    tempDir = await createTempDir("tuidf-split-at-array-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -104,7 +104,7 @@ describe("split tool", () => {
 
   it("extracts a page range", async () => {
     const { splitPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-split-range-");
+    tempDir = await createTempDir("tuidf-split-range-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -126,7 +126,7 @@ describe("split tool", () => {
 
   it("uses numeric split range values from the first page", async () => {
     const { splitPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-split-range-number-");
+    tempDir = await createTempDir("tuidf-split-range-number-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -148,7 +148,7 @@ describe("split tool", () => {
 
   it("returns failure for missing input file", async () => {
     const { splitPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-split-missing-");
+    tempDir = await createTempDir("tuidf-split-missing-");
 
     const result = await splitPDF({
       inputPath: join(tempDir, "missing.pdf"),
@@ -164,7 +164,7 @@ describe("split tool", () => {
 describe("extract tool", () => {
   it("extracts every N pages into multiple files", async () => {
     const { extractPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-extract-every-");
+    tempDir = await createTempDir("tuidf-extract-every-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -188,7 +188,7 @@ describe("extract tool", () => {
 
   it("extracts a page range into one file", async () => {
     const { extractPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-extract-range-");
+    tempDir = await createTempDir("tuidf-extract-range-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -210,7 +210,7 @@ describe("extract tool", () => {
 
   it("clamps numeric extract ranges to the total page count", async () => {
     const { extractPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-extract-range-number-");
+    tempDir = await createTempDir("tuidf-extract-range-number-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -232,7 +232,7 @@ describe("extract tool", () => {
 
   it("validates extract range order", async () => {
     const { extractPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-extract-invalid-");
+    tempDir = await createTempDir("tuidf-extract-invalid-");
 
     const input = join(tempDir, "input.pdf");
     const outputDir = join(tempDir, "out");
@@ -253,7 +253,7 @@ describe("extract tool", () => {
 
   it("returns failure for missing input file", async () => {
     const { extractPDF } = await import("../../src/tools/split-extract");
-    tempDir = await createTempDir("pdfzen-extract-missing-");
+    tempDir = await createTempDir("tuidf-extract-missing-");
 
     const result = await extractPDF({
       inputPath: join(tempDir, "missing.pdf"),

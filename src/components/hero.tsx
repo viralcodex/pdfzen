@@ -7,7 +7,7 @@ const Hero = () => {
     terminalDimensions().height < 24 || terminalDimensions().width < 60 ? "tiny" : "block";
   return (
     <box justifyContent="center" alignItems="center" flexDirection="column">
-      <ascii_font font={titleFont()} text="PDFZEN" style={{ maxWidth: 100 }} />
+      <ascii_font font={titleFont()} text="TUIDF" style={{ maxWidth: 100 }} />
       <text
         attributes={TextAttributes.BOLD}
         fg={"yellow"}

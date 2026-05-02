@@ -72,14 +72,14 @@ function pathHasEntry(pathValue: string, entry: string): boolean {
 }
 
 async function installGlobalCommand(): Promise<void> {
-  step("Installing global 'pdfzen' command...");
+  step("Installing global 'tuidf' command...");
 
   let binDir = "";
   const pathValue = process.env.PATH ?? "";
   for (const candidate of ["/opt/homebrew/bin", "/usr/local/bin"]) {
     if (pathHasEntry(pathValue, candidate) && existsSync(candidate)) {
       try {
-        const testFile = resolve(candidate, ".pdfzen-write-test");
+        const testFile = resolve(candidate, ".tuidf-write-test");
         await writeFile(testFile, "ok");
         await rm(testFile, { force: true });
         binDir = candidate;
@@ -96,7 +96,7 @@ async function installGlobalCommand(): Promise<void> {
     await mkdir(binDir, { recursive: true });
   }
 
-  const launcherPath = resolve(binDir, "pdfzen");
+  const launcherPath = resolve(binDir, "tuidf");
   const quotedProjectDir = shellSingleQuote(projectDir);
   const launcher = `#!/usr/bin/env bash\nset -euo pipefail\nexec bun run --cwd ${quotedProjectDir} scripts/dev.ts "$@"\n`;
   await writeFile(launcherPath, launcher, "utf8");
@@ -139,7 +139,7 @@ async function startUi(): Promise<void> {
 
 function printBanner(): void {
   console.log("\n╔════════════════════════════════════╗");
-  console.log("║       PDFZen Dev Environment       ║");
+  console.log("║       TuiDF Dev Environment       ║");
   console.log("╚════════════════════════════════════╝\n");
 }
 
@@ -148,7 +148,7 @@ function printUsage(): void {
 
 Commands:
   setup    Install dependencies
-  install  Setup and install global "pdfzen" command
+  install  Setup and install global "tuidf" command
   help     Show this message
 
 Default:

@@ -47,7 +47,7 @@ async function compile(toBuild: (typeof targets)[number][]): Promise<void> {
 
   for (const t of toBuild) {
     const ext = t.name.startsWith("windows") ? ".exe" : "";
-    const outFile = resolve(outDir, `pdfzen-${t.name}${ext}`);
+    const outFile = resolve(outDir, `tuidf-${t.name}${ext}`);
     log(`Compiling ${t.name}...`);
 
     const result = await Bun.build({

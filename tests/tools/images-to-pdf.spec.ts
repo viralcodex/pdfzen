@@ -26,7 +26,7 @@ const getFirstPageSize = async (pdfPath: string) => {
 describe("images-to-pdf tool", () => {
   it("converts png and jpg images into a single pdf", async () => {
     const { imagesToPDF } = await import("../../src/tools/images-to-pdf");
-    tempDir = await createTempDir("pdfzen-images-to-pdf-");
+    tempDir = await createTempDir("tuidf-images-to-pdf-");
 
     const pngPath = join(tempDir, "pixel.png");
     const jpgPath = join(tempDir, "pixel.jpg");
@@ -50,7 +50,7 @@ describe("images-to-pdf tool", () => {
 
   it("supports a4 and letter output sizes", async () => {
     const { imagesToPDF } = await import("../../src/tools/images-to-pdf");
-    tempDir = await createTempDir("pdfzen-images-to-pdf-page-sizes-");
+    tempDir = await createTempDir("tuidf-images-to-pdf-page-sizes-");
 
     const pngPath = join(tempDir, "pixel.png");
     const a4Output = join(tempDir, "a4.pdf");

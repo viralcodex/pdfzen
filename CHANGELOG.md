@@ -1,10 +1,10 @@
 # Changelog
 
-All notable changes to PDFZen will be documented in this file.
+All notable changes to TuiDF will be documented in this file.
 
 ## [0.1.0] — 2025-04-05
 
-Initial public release of **PDFZen** — a fast, terminal-native PDF toolkit built with [SolidJS](https://solidjs.com), [OpenTUI](https://opentui.com), and [Bun](https://bun.sh).
+Initial public release of **TuiDF** — a fast, terminal-native PDF toolkit built with [SolidJS](https://solidjs.com), [OpenTUI](https://opentui.com), and [Bun](https://bun.sh).
 
 ### Features
 
@@ -39,11 +39,11 @@ Initial public release of **PDFZen** — a fast, terminal-native PDF toolkit bui
 - Cross-platform standalone binaries: **macOS** (arm64, x64), **Linux** (x64, arm64), **Windows** (x64).
 - One-line installer script for macOS and Linux (`curl | bash`).
 - GitHub Actions CI/CD pipeline for automated release artifact builds.
-- Output files saved to `~/Documents/PDFZen/` by default.
+- Output files saved to `~/Documents/TuiDF/` by default.
 
 ### Testing
 
 - Comprehensive test suite covering all tools, components, hooks, and utilities.
 - Tests run via `bun test`.
 
-[0.1.0]: https://github.com/viralcodex/pdfzen/releases/tag/v0.1.0
+[0.1.0]: https://github.com/viralcodex/tuidf/releases/tag/v0.1.0

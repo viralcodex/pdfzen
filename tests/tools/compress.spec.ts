@@ -20,7 +20,7 @@ afterEach(async () => {
 describe("compress tool", () => {
   it("compresses a valid pdf and writes the output", async () => {
     const { compressPDF } = await import("../../src/tools/compress");
-    tempDir = await createTempDir("pdfzen-compress-");
+    tempDir = await createTempDir("tuidf-compress-");
 
     const input = join(tempDir, "input.pdf");
     const output = join(tempDir, "compressed.pdf");
@@ -43,7 +43,7 @@ describe("compress tool", () => {
 
   it("rejects inputs that cannot be treated as pdf documents", async () => {
     const { compressPDF } = await import("../../src/tools/compress");
-    tempDir = await createTempDir("pdfzen-compress-invalid-doc-");
+    tempDir = await createTempDir("tuidf-compress-invalid-doc-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 1);

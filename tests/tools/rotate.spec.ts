@@ -14,7 +14,7 @@ afterEach(async () => {
 describe("rotate tool", () => {
   it("rotates all pages", async () => {
     const { rotatePDF, getPDFRotations } = await import("../../src/tools/rotate");
-    tempDir = await createTempDir("pdfzen-rotate-");
+    tempDir = await createTempDir("tuidf-rotate-");
 
     const input = join(tempDir, "input.pdf");
     const output = join(tempDir, "rotated.pdf");
@@ -38,7 +38,7 @@ describe("rotate tool", () => {
 
   it("rotates all pages when pages are omitted", async () => {
     const { rotatePDF, getPDFRotations } = await import("../../src/tools/rotate");
-    tempDir = await createTempDir("pdfzen-rotate-default-pages-");
+    tempDir = await createTempDir("tuidf-rotate-default-pages-");
 
     const input = join(tempDir, "input.pdf");
     const output = join(tempDir, "rotated.pdf");
@@ -61,7 +61,7 @@ describe("rotate tool", () => {
 
   it("rotates only selected valid pages", async () => {
     const { rotatePDF, getPDFRotations } = await import("../../src/tools/rotate");
-    tempDir = await createTempDir("pdfzen-rotate-selected-");
+    tempDir = await createTempDir("tuidf-rotate-selected-");
 
     const input = join(tempDir, "input.pdf");
     const output = join(tempDir, "rotated.pdf");
@@ -85,7 +85,7 @@ describe("rotate tool", () => {
 
   it("returns failure when rotate input file is missing", async () => {
     const { rotatePDF } = await import("../../src/tools/rotate");
-    tempDir = await createTempDir("pdfzen-rotate-missing-");
+    tempDir = await createTempDir("tuidf-rotate-missing-");
 
     const result = await rotatePDF({
       inputPath: join(tempDir, "missing.pdf"),
@@ -117,7 +117,7 @@ describe("rotate tool", () => {
 
   it("throws clear error for invalid PDF in getPDFRotations", async () => {
     const { getPDFRotations } = await import("../../src/tools/rotate");
-    tempDir = await createTempDir("pdfzen-rotate-invalid-");
+    tempDir = await createTempDir("tuidf-rotate-invalid-");
 
     const notPdf = join(tempDir, "bad.pdf");
     await Bun.write(notPdf, "not a real pdf");

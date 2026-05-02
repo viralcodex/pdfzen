@@ -91,7 +91,7 @@ describe("utils", () => {
   });
 
   it("validates pdf and image files", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "pdfzen-utils-"));
+    const dir = await mkdtemp(join(tmpdir(), "tuidf-utils-"));
     tempDirs.push(dir);
 
     const pdfPath = join(dir, "sample.pdf");
@@ -109,7 +109,7 @@ describe("utils", () => {
   });
 
   it("rejects oversized pdf and image files", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "pdfzen-large-"));
+    const dir = await mkdtemp(join(tmpdir(), "tuidf-large-"));
     tempDirs.push(dir);
 
     const largePdf = join(dir, "large.pdf");
@@ -149,7 +149,7 @@ describe("utils", () => {
   });
 
   it("returns page count for valid pdf and 0 for invalid files", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "pdfzen-pages-"));
+    const dir = await mkdtemp(join(tmpdir(), "tuidf-pages-"));
     tempDirs.push(dir);
 
     const pdfPath = join(dir, "multi.pdf");
@@ -163,7 +163,7 @@ describe("utils", () => {
   });
 
   it("returns formatted file metadata with optional page counts", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "pdfzen-metadata-"));
+    const dir = await mkdtemp(join(tmpdir(), "tuidf-metadata-"));
     tempDirs.push(dir);
 
     const pdfPath = join(dir, "meta.pdf");
@@ -219,7 +219,7 @@ describe("utils", () => {
   it("throws when output path is not a directory", async () => {
     const restoreError = silenceConsoleMethod("error");
 
-    const dir = await mkdtemp(join(tmpdir(), "pdfzen-not-dir-"));
+    const dir = await mkdtemp(join(tmpdir(), "tuidf-not-dir-"));
     tempDirs.push(dir);
     const filePath = join(dir, "file.txt");
     await Bun.write(filePath, "x");
