@@ -5,8 +5,6 @@ import type { Status, FileListOptions } from "../model/models";
 
 const READY_STATUS: Status = { msg: "Ready", type: "info" };
 
-export type { FileListOptions };
-
 export function useFileList(options: FileListOptions = {}) {
   const { trackPageCount = false, acceptImages = false } = options;
 
