@@ -20,7 +20,7 @@ afterEach(async () => {
 describe("protect tool", () => {
   it("protects and unprotects a pdf with passwords", async () => {
     const { protectPDF, unprotectPDF } = await import("../../src/tools/protect");
-    tempDir = await createTempDir("pdfzen-protect-");
+    tempDir = await createTempDir("tuidf-protect-");
 
     const input = join(tempDir, "input.pdf");
     const protectedPath = join(tempDir, "protected.pdf");
@@ -53,7 +53,7 @@ describe("protect tool", () => {
 
   it("rejects inputs that cannot be treated as pdf documents", async () => {
     const { protectPDF } = await import("../../src/tools/protect");
-    tempDir = await createTempDir("pdfzen-protect-invalid-doc-");
+    tempDir = await createTempDir("tuidf-protect-invalid-doc-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 1);
@@ -76,7 +76,7 @@ describe("protect tool", () => {
 
   it("rejects protected inputs that cannot be converted back into pdf documents", async () => {
     const { unprotectPDF } = await import("../../src/tools/protect");
-    tempDir = await createTempDir("pdfzen-unprotect-invalid-doc-");
+    tempDir = await createTempDir("tuidf-unprotect-invalid-doc-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 1);
@@ -97,7 +97,7 @@ describe("protect tool", () => {
 
   it("rejects an incorrect password for a protected pdf", async () => {
     const { protectPDF, unprotectPDF } = await import("../../src/tools/protect");
-    tempDir = await createTempDir("pdfzen-protect-wrong-password-");
+    tempDir = await createTempDir("tuidf-protect-wrong-password-");
 
     const input = join(tempDir, "input.pdf");
     const protectedPath = join(tempDir, "protected.pdf");

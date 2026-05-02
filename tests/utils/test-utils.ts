@@ -3,7 +3,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { PDFDocument } from "pdf-lib";
 
-export async function createTempDir(prefix = "pdfzen-test-"): Promise<string> {
+export async function createTempDir(prefix = "tuidf-test-"): Promise<string> {
   return mkdtemp(join(tmpdir(), prefix));
 }
 

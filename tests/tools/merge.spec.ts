@@ -14,7 +14,7 @@ afterEach(async () => {
 describe("merge tool", () => {
   it("merges multiple PDFs into one", async () => {
     const { mergePDFs } = await import("../../src/tools/merge");
-    tempDir = await createTempDir("pdfzen-merge-");
+    tempDir = await createTempDir("tuidf-merge-");
 
     const first = join(tempDir, "first.pdf");
     const second = join(tempDir, "second.pdf");
@@ -48,7 +48,7 @@ describe("merge tool", () => {
 
   it("fails when one input file is not a valid PDF", async () => {
     const { mergePDFs } = await import("../../src/tools/merge");
-    tempDir = await createTempDir("pdfzen-merge-invalid-");
+    tempDir = await createTempDir("tuidf-merge-invalid-");
 
     const valid = join(tempDir, "valid.pdf");
     const invalid = join(tempDir, "invalid.pdf");

@@ -14,7 +14,7 @@ afterEach(async () => {
 describe("delete tool", () => {
   it("deletes selected pages", async () => {
     const { deletePages } = await import("../../src/tools/delete");
-    tempDir = await createTempDir("pdfzen-delete-");
+    tempDir = await createTempDir("tuidf-delete-");
 
     const input = join(tempDir, "input.pdf");
     const output = join(tempDir, "output.pdf");
@@ -36,7 +36,7 @@ describe("delete tool", () => {
 
   it("rejects deleting all pages", async () => {
     const { deletePages } = await import("../../src/tools/delete");
-    tempDir = await createTempDir("pdfzen-delete-invalid-");
+    tempDir = await createTempDir("tuidf-delete-invalid-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 2);
@@ -55,7 +55,7 @@ describe("delete tool", () => {
 
   it("rejects when no valid pages are provided", async () => {
     const { deletePages } = await import("../../src/tools/delete");
-    tempDir = await createTempDir("pdfzen-delete-no-valid-");
+    tempDir = await createTempDir("tuidf-delete-no-valid-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 2);
@@ -74,7 +74,7 @@ describe("delete tool", () => {
 
   it("returns page count for valid PDFs", async () => {
     const { getPDFPageCount } = await import("../../src/tools/delete");
-    tempDir = await createTempDir("pdfzen-delete-count-");
+    tempDir = await createTempDir("tuidf-delete-count-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 4);
@@ -84,7 +84,7 @@ describe("delete tool", () => {
 
   it("deletes multiple pages in descending-safe order", async () => {
     const { deletePages } = await import("../../src/tools/delete");
-    tempDir = await createTempDir("pdfzen-delete-multi-");
+    tempDir = await createTempDir("tuidf-delete-multi-");
 
     const input = join(tempDir, "input.pdf");
     const output = join(tempDir, "output.pdf");
@@ -106,7 +106,7 @@ describe("delete tool", () => {
 
   it("deduplicates repeated pages before deleting", async () => {
     const { deletePages } = await import("../../src/tools/delete");
-    tempDir = await createTempDir("pdfzen-delete-duplicates-");
+    tempDir = await createTempDir("tuidf-delete-duplicates-");
 
     const input = join(tempDir, "input.pdf");
     const output = join(tempDir, "output.pdf");
@@ -128,7 +128,7 @@ describe("delete tool", () => {
 
   it("returns failure when input PDF is missing", async () => {
     const { deletePages } = await import("../../src/tools/delete");
-    tempDir = await createTempDir("pdfzen-delete-missing-");
+    tempDir = await createTempDir("tuidf-delete-missing-");
 
     const result = await deletePages({
       inputPath: join(tempDir, "missing.pdf"),

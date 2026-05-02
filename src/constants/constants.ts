@@ -2,7 +2,7 @@ import { homedir } from "os";
 import path from "path";
 import type { StatusType } from "../model";
 
-export const OUTPUT_DIR = path.join(homedir(), "Documents", "PDFZen");
+export const OUTPUT_DIR = path.join(homedir(), "Documents", "TuiDF");
 
 export const toolsMenu = [
   { name: "Merge PDFs", command: "merge" },

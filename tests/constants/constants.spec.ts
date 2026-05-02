@@ -9,8 +9,8 @@ import {
 } from "../../src/constants/constants";
 
 describe("constants", () => {
-  it("defines OUTPUT_DIR under Documents/PDFZen", () => {
-    expect(OUTPUT_DIR.endsWith("Documents/PDFZen")).toBe(true);
+  it("defines OUTPUT_DIR under Documents/TuiDF", () => {
+    expect(OUTPUT_DIR.endsWith("Documents/TuiDF")).toBe(true);
   });
 
   it("defines tools menu entries with unique commands", () => {

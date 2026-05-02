@@ -9,12 +9,12 @@
 ### Quick install (macOS / Linux)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/viralcodex/pdfzen/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/viralcodex/tuidf/main/install.sh | bash
 ```
 
 ### Windows
 
-Download `pdfzen-windows-x64.exe` from the [latest release](https://github.com/viralcodex/pdfzen/releases/latest) and add it to your PATH.
+Download `tuidf-windows-x64.exe` from the [latest release](https://github.com/viralcodex/tuidf/releases/latest) and add it to your PATH.
 
 ### From source
 
@@ -50,7 +50,7 @@ bun run build         # Build for distribution
 bun run build:release # Build standalone binaries for all platforms
 ```
 
-Install a global `pdfzen` command (macOS/Linux):
+Install a global `tuidf` command (macOS/Linux):
 
 ```bash
 bun run install:global
@@ -59,7 +59,7 @@ bun run install:global
 Then reload your shell and run from anywhere:
 
 ```bash
-pdfzen
+tuidf
 ```
 
 ## Features

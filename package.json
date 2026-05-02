@@ -1,5 +1,5 @@
 {
-  "name": "pdfzen",
+  "name": "tuidf",
   "private": true,
   "type": "module",
   "module": "src/index.tsx",

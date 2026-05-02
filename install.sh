@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# PDFZen installer — download the latest release binary and put it in PATH.
+# TuiDF installer — download the latest release binary and put it in PATH.
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/viralcodex/pdfzen/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/viralcodex/tuidf/main/install.sh | bash
 
-REPO="viralcodex/pdfzen"
-INSTALL_DIR="${PDFZEN_INSTALL_DIR:-$HOME/.local/bin}"
-BINARY_NAME="pdfzen"
+REPO="viralcodex/tuidf"
+INSTALL_DIR="${TUIDF_INSTALL_DIR:-$HOME/.local/bin}"
+BINARY_NAME="tuidf"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ download() {
 main() {
   local platform tag download_url tmp_file
 
-  info "Installing PDFZen..."
+  info "Installing TuiDF..."
 
   platform="$(detect_platform)"
   ok "Detected platform: ${platform}"
@@ -80,8 +80,8 @@ main() {
   [ -n "$tag" ] || die "Could not determine latest release. Check https://github.com/${REPO}/releases"
   ok "Latest release: ${tag}"
 
-  download_url="https://github.com/${REPO}/releases/download/${tag}/pdfzen-${platform}"
-  info "Downloading pdfzen-${platform}..."
+  download_url="https://github.com/${REPO}/releases/download/${tag}/tuidf-${platform}"
+  info "Downloading tuidf-${platform}..."
 
   tmp_file="$(mktemp)"
   trap 'rm -f "$tmp_file"' EXIT
@@ -115,7 +115,7 @@ main() {
   esac
 
   echo ""
-  ok "PDFZen installed! Run 'pdfzen' to start."
+  ok "TuiDF installed! Run 'tuidf' to start."
 }
 
 main

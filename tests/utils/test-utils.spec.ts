@@ -21,7 +21,7 @@ afterEach(async () => {
 
 describe("test-utils", () => {
   it("creates and cleans up temp directories", async () => {
-    const dir = await createTempDir("pdfzen-test-utils-");
+    const dir = await createTempDir("tuidf-test-utils-");
     tempDirs.push(dir);
 
     expect((await stat(dir)).isDirectory()).toBe(true);
@@ -33,7 +33,7 @@ describe("test-utils", () => {
   });
 
   it("creates pdf and returns page count", async () => {
-    const dir = await createTempDir("pdfzen-test-utils-");
+    const dir = await createTempDir("tuidf-test-utils-");
     tempDirs.push(dir);
 
     const pdfPath = join(dir, "sample.pdf");
@@ -48,7 +48,7 @@ describe("test-utils", () => {
   });
 
   it("creates a valid png signature", async () => {
-    const dir = await createTempDir("pdfzen-test-utils-");
+    const dir = await createTempDir("tuidf-test-utils-");
     tempDirs.push(dir);
 
     const pngPath = join(dir, "pixel.png");
@@ -62,7 +62,7 @@ describe("test-utils", () => {
   });
 
   it("creates a valid jpg signature", async () => {
-    const dir = await createTempDir("pdfzen-test-utils-");
+    const dir = await createTempDir("tuidf-test-utils-");
     tempDirs.push(dir);
 
     const jpgPath = join(dir, "pixel.jpg");
