@@ -1,3 +1,5 @@
+import type { PreviewDocument } from "../utils/pdf-preview";
+
 // ============ Shared Types ============
 export type StatusType = "info" | "error" | "success";
 
@@ -166,3 +168,64 @@ export interface ExtractPDFOutput {
   error?:string;
   totalFiles?:number
 }
+
+// ============ Preview PDF ============
+export interface PreviewButtonProps {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+}
+
+export interface PreviewStatusMessageProps {
+  color: string;
+  content: string;
+}
+  
+export interface CachedDocument {
+  doc: PreviewDocument;
+  modifiedMs: number;
+  pageCount: number;
+}
+
+export interface CachedPreviewImage {
+  result: PDFPreviewRenderResult;
+}
+
+export interface CellPixelSize {
+  width: number;
+  height: number;
+}
+
+export interface PDFPreviewViewport {
+  column: number;
+  row: number;
+  columns: number;
+  rows: number;
+  widthPx: number;
+  heightPx: number;
+  cellWidthPx: number;
+  cellHeightPx: number;
+}
+
+export interface PDFPreviewRenderResult {
+  pageCount: number;
+  width: number;
+  height: number;
+  png: Uint8Array;
+}
+
+export interface KittyPlacementBase {
+  column: number;
+  row: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export interface ColumnBoundKittyPlacement extends KittyPlacementBase {
+  columns: number;
+}
+
+export interface RowBoundKittyPlacement extends KittyPlacementBase {
+  rows: number;
+}
+

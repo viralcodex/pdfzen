@@ -12,15 +12,15 @@ import {
   Toggle,
   TextInput,
 } from "./ui";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
+import { useFileListContext } from "../provider/fileListProvider";
 
 type Rotation = 90 | 180 | 270;
 type PageMode = "all" | "specific";
 
 export function RotateUI() {
-  const fl = useFileList({ trackPageCount: true });
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [rotation, setRotation] = createSignal<Rotation>(90);
   const [pageMode, setPageMode] = createSignal<PageMode>("all");
@@ -177,6 +177,7 @@ export function RotateUI() {
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
           await fl.addFilesToList(paths);

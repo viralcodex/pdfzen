@@ -3,8 +3,8 @@ import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { compressPDF, formatFileSize } from "../tools/compress";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar } from "./ui";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
+import { useFileListContext } from "../provider/fileListProvider";
 
 interface CompressionResult {
   originalSize: number;
@@ -14,7 +14,7 @@ interface CompressionResult {
 }
 
 export function CompressUI() {
-  const fl = useFileList();
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [result, setResult] = createSignal<CompressionResult | null>(null);
 
@@ -65,6 +65,12 @@ export function CompressUI() {
 
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+
       nav.registerElement({
         id: `file-${index}-open`,
         type: "button",
@@ -123,6 +129,7 @@ export function CompressUI() {
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
           await fl.addFilesToList(paths);

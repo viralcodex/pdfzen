@@ -11,13 +11,13 @@ import {
   ToggleRow,
   Toggle,
 } from "./ui";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
+import { useFileListContext } from "../provider/fileListProvider";
 
 type PageSize = "fit" | "a4" | "letter";
 
 export function ImagesToPDFUI() {
-  const fl = useFileList({ acceptImages: true });
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [pageSize, setPageSize] = createSignal<PageSize>("fit");
 
@@ -63,6 +63,12 @@ export function ImagesToPDFUI() {
     nav.clearElements();
     // Register file list items and their action buttons
     fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+
       nav.registerElement({
         id: `file-${index}-open`,
         type: "button",
@@ -145,8 +151,9 @@ export function ImagesToPDFUI() {
       <FileList
         files={fl.files}
         fileType="image"
-        selectedIndex={() => null}
-        onSelect={() => {}}
+        selectedIndex={fl.selectedIndex}
+        onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onMove={fl.moveFile}
         onFilesSelected={async (paths) => {

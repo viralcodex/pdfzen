@@ -2,12 +2,12 @@ import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { unprotectPDF } from "../tools/protect";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar, TextInput } from "./ui";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
+import { useFileListContext } from "../provider/fileListProvider";
 
 export function DecryptUI() {
-  const fl = useFileList();
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [password, setPassword] = createSignal("");
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
@@ -62,6 +62,12 @@ export function DecryptUI() {
 
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+
       nav.registerElement({
         id: `file-${index}-open`,
         type: "button",
@@ -130,6 +136,7 @@ export function DecryptUI() {
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
           await fl.addFilesToList(paths);

@@ -3,7 +3,7 @@ import { useTerminalDimensions } from "@opentui/solid";
 import { Show, Index, createSignal, createResource } from "solid-js";
 import type { JSX, Accessor, Setter } from "solid-js";
 import { EmptyBorderChars, STATUS_COLORS } from "../constants/constants";
-import type { StatusType } from "../model/models";
+import type { PreviewButtonProps, PreviewStatusMessageProps, StatusType } from "../model/models";
 import { getFormattedFileMetadata, handleFileExplorer, openFile } from "../utils/utils";
 
 // ============ Layout Components ============
@@ -100,7 +100,7 @@ export function Button(props: ButtonProps) {
       paddingBottom={1}
       justifyContent="center"
       alignItems="center"
-      onMouseDown={props.onClick}
+      onMouseDown={props.disabled ? undefined : props.onClick}
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}
     >
@@ -185,7 +185,6 @@ export function StatusBar(props: { message: string; type: StatusType }) {
       backgroundColor="#1a1a1a"
       paddingLeft={1}
       paddingRight={1}
-      // paddingTop={1}
       marginTop={1}
       flexShrink={0}
     >
@@ -204,6 +203,7 @@ interface FileListProps {
   fileType: "pdf" | "image";
   selectedIndex: Accessor<number | null>;
   onSelect: (index: number) => void;
+  onFocusIndex?: (index: number) => void;
   onRemove: (index: number) => void;
   onMove?: (index: number, direction: "up" | "down") => void;
   onFilesSelected?: (files: string[]) => void;
@@ -271,7 +271,8 @@ export function FileList(props: FileListProps) {
               const [upHovered, setUpHovered] = createSignal(false);
               const [downHovered, setDownHovered] = createSignal(false);
               const [removeHovered, setRemoveHovered] = createSignal(false);
-              const isRowHighlighted = () => isFocused() || rowHovered();
+              const isRowHighlighted = () => (isFocused() || rowHovered()) && !isSelected();
+              const isRowSelected = () => isSelected() && !isRowHighlighted();
               const canMoveUp = () => index > 0;
               const canMoveDown = () => index < fileCount() - 1;
               const metadataText = () => {
@@ -320,25 +321,40 @@ export function FileList(props: FileListProps) {
                   alignItems="center"
                   padding={1}
                   marginBottom={1}
-                  backgroundColor={isRowHighlighted() ? "#2a4a3a" : "#333333"}
-                  onMouseDown={() => props.onSelect(index)}
+                  backgroundColor={
+                    isRowHighlighted()
+                      ? "#203949"
+                      : isRowSelected()
+                        ? "#1a342e"
+                        : "#333333"
+                  }
+                  onMouseDown={() => {
+                    props.onFocusIndex?.(index);
+                    props.onSelect(index);
+                  }}
                   onMouseOver={() => setRowHovered(true)}
                   onMouseOut={() => setRowHovered(false)}
                   columnGap={1}
                   width="100%"
                   border={["left"]}
-                  borderColor={isRowHighlighted() ? "#68ffc0" : "#3498db"}
+                  borderColor={
+                    isRowHighlighted()
+                      ? "#8fd3ff"
+                      : isRowSelected()
+                        ? "#68ffc0"
+                        : "#4b5563"
+                  }
                   customBorderChars={{
                     ...EmptyBorderChars,
-                    vertical: isRowHighlighted() ? "▍" : "┃",
+                    vertical: isRowHighlighted() ? "▍" : isRowSelected() ? "▍" : "┃",
                   }}
                 >
                   <text
                     fg={
                       isRowHighlighted()
-                        ? "#68ffc0"
+                        ? "#8fd3ff"
                         : isSelected()
-                          ? "cyan"
+                          ? "#68ffc0"
                           : "yellow"
                     }
                     minWidth={3}
@@ -351,16 +367,30 @@ export function FileList(props: FileListProps) {
                     minWidth={0}
                   >
                     <text
-                      fg={isRowHighlighted() ? "#ffffff" : "#ecf0f1"}
+                      fg={
+                        isRowHighlighted()
+                          ? "#ffffff"
+                          : isRowSelected()
+                            ? "#d8fff1"
+                            : "#ecf0f1"
+                      }
                       flexGrow={1}
                       flexShrink={1}
                       content={file()}
                       attributes={
-                        isRowHighlighted() ? TextAttributes.BOLD : undefined
+                        isRowHighlighted() || isRowSelected()
+                          ? TextAttributes.BOLD
+                          : undefined
                       }
                     />
                     <text
-                      fg={isRowHighlighted() ? "#9ed9bc" : "#7f8c8d"}
+                      fg={
+                        isRowHighlighted()
+                          ? "#b6dff5"
+                          : isRowSelected()
+                            ? "#9ed9bc"
+                            : "#7f8c8d"
+                      }
                       flexGrow={1}
                       flexShrink={1}
                       content={metadataText()}
@@ -594,6 +624,43 @@ export function TextInput(props: TextInputProps) {
           onMouseDown={props.onFocus}
         />
       </box>
+    </box>
+  );
+}
+
+//=========== Preview Components ============
+
+export function PreviewButton(props: PreviewButtonProps) {
+  return (
+    <box
+      border={[
+        "bottom",
+      ]}
+      borderColor={props.disabled ? "#3d464c" : "#3498db"}
+      backgroundColor={props.disabled ? "#1a1f23" : "#14242e"}
+      paddingLeft={1}
+      paddingRight={1}
+      justifyContent="center"
+      alignItems="center"
+      onMouseDown={() => {
+        if (!props.disabled) {
+          props.onClick();
+        }
+      }}
+    >
+      <text
+        fg={props.disabled ? "#59636a" : "#68ffc0"}
+        attributes={props.disabled ? undefined : TextAttributes.BOLD}
+        content={props.label}
+      />
+    </box>
+  );
+}
+
+export function PreviewStatusMessage(props: PreviewStatusMessageProps) {
+  return (
+    <box flexGrow={1} alignItems="center" justifyContent="center" padding={1}>
+      <text fg={props.color} content={props.content} />
     </box>
   );
 }

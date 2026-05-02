@@ -1,13 +1,27 @@
-import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
+import {
+  createSignal,
+  createMemo,
+  Show,
+  createEffect,
+  onCleanup,
+} from "solid-js";
 import { deletePages } from "../tools/delete";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
-import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar, TextInput } from "./ui";
-import { useFileList } from "../hooks/useFileList";
+import {
+  ToolContainer,
+  Label,
+  FileList,
+  ButtonRow,
+  Button,
+  StatusBar,
+  TextInput,
+} from "./ui";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
+import { useFileListContext } from "../provider/fileListProvider";
 
 export function DeleteUI() {
-  const fl = useFileList({ trackPageCount: true });
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [pagesInput, setPagesInput] = createSignal("");
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
@@ -83,6 +97,12 @@ export function DeleteUI() {
     // Register file list items and remove buttons
     fl.files().forEach((_, index) => {
       nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+      
+      nav.registerElement({
         id: `file-${index}-open`,
         type: "button",
         onEnter: () => openFile(fl.files()[index]!),
@@ -150,6 +170,7 @@ export function DeleteUI() {
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
           await fl.addFilesToList(paths);
@@ -179,7 +200,11 @@ export function DeleteUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
+            <text
+              fg="#3498db"
+              attributes={TextAttributes.BOLD}
+              content={fl.selectedFile() ?? ""}
+            />
             <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
           </box>
         </box>
@@ -190,7 +215,9 @@ export function DeleteUI() {
         value={pagesInput}
         onInput={setPagesInput}
         placeholder="1, 3, 5"
-        focused={focusedInput() === "input-pages" || nav.isFocused("input-pages")}
+        focused={
+          focusedInput() === "input-pages" || nav.isFocused("input-pages")
+        }
         onFocus={() => setFocusedInput("input-pages")}
       />
 
