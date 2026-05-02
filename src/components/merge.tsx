@@ -2,11 +2,11 @@ import { createEffect, onCleanup } from "solid-js";
 import { mergePDFs } from "../tools/merge";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar } from "./ui";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
+import { useFileListContext } from "../provider/fileListProvider";
 
 export function MergeUI() {
-  const fl = useFileList();
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
 
   const canMerge = () => fl.fileCount() >= 2 && !fl.isProcessing();
@@ -45,6 +45,12 @@ export function MergeUI() {
 
     // Register file list items and their action buttons
     fl.files().forEach((_, index) => {
+      nav.registerElement({
+        id: `file-${index}`,
+        type: "list-item",
+        onEnter: () => fl.selectFile(index),
+      });
+
       nav.registerElement({
         id: `file-${index}-open`,
         type: "button",
@@ -110,8 +116,9 @@ export function MergeUI() {
       <FileList
         files={fl.files}
         fileType="pdf"
-        selectedIndex={() => null}
-        onSelect={() => {}}
+        selectedIndex={fl.selectedIndex}
+        onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onMove={fl.moveFile}
         onFilesSelected={async (paths) => {

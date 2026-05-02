@@ -2,7 +2,6 @@ import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { useTerminalDimensions } from "@opentui/solid";
 import { extractPDF, splitPDF } from "../tools/split-extract";
 import { getOutputDir, openFile, openOutputFolder } from "../utils/utils";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import {
   ToolContainer,
@@ -18,6 +17,7 @@ import {
 import { TextAttributes } from "@opentui/core";
 import { EmptyBorderChars } from "../constants/constants";
 import type { SplitMode, ExtractMode } from "../model";
+import { useFileListContext } from "../provider/fileListProvider";
 
 type ActionTypes = {
       action: "split";
@@ -30,7 +30,7 @@ type ActionTypes = {
   };
 
 export function SplitExtractUI() {
-  const fl = useFileList({ trackPageCount: true });
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [splitMode, setSplitMode] = createSignal<SplitMode>("at");
   const [extractMode, setExtractMode] = createSignal<ExtractMode>("range");
@@ -290,6 +290,7 @@ export function SplitExtractUI() {
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
           await fl.addFilesToList(paths);

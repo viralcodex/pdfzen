@@ -1,36 +1,29 @@
 import { KeyEvent, RGBA } from "@opentui/core";
-import { Dynamic, render, useKeyboard } from "@opentui/solid";
+import { render, useKeyboard } from "@opentui/solid";
 import { ToolsMenu } from "./components/tools-menu";
-import { HeaderLayout } from "./components/header-layout";
 import { createSignal } from "solid-js";
-import { MergeUI } from "./components/merge";
-import { CompressUI } from "./components/compress";
-import { RotateUI } from "./components/rotate";
-import { SplitExtractUI } from "./components/split-extract";
-import { DeleteUI } from "./components/delete";
-import { PDFToImagesUI } from "./components/pdf-to-images";
-import { ImagesToPDFUI } from "./components/images-to-pdf";
-import { ProtectUI } from "./components/protect";
-import { DecryptUI } from "./components/decrypt";
 import { toolsMenu } from "./constants/constants";
 import Hero from "./components/hero";
+import { MainUI } from "./components/main-ui";
+import { type FileListOptions } from "./model/models";
+import { FileListProvider } from "./provider/fileListProvider";
 
-// Static tool component mapping - defined outside render for performance
-const toolComponents: Record<string, () => any> = {
-  merge: MergeUI,
-  splitExtract: SplitExtractUI,
-  compress: CompressUI,
-  rotate: RotateUI,
-  delete: DeleteUI,
-  pdfToImages: PDFToImagesUI,
-  imagesToPDF: ImagesToPDFUI,
-  protect: ProtectUI,
-  decrypt: DecryptUI,
+const toolFileListOptions: Record<string, FileListOptions> = {
+  merge: {},
+  compress: {},
+  rotate: { trackPageCount: true },
+  splitExtract: { trackPageCount: true },
+  delete: { trackPageCount: true },
+  pdfToImages: { trackPageCount: true },
+  imagesToPDF: { acceptImages: true },
+  protect: {},
+  decrypt: {},
 };
 
 render(() => {
   const [selectedTool, setSelectedTool] = createSignal<string>("");
   const [escapeCount, setEscapeCount] = createSignal(0);
+
   let escapeTimer: ReturnType<typeof setTimeout> | null = null;
 
   const getToolName = (command: string) =>
@@ -60,7 +53,12 @@ render(() => {
   });
 
   return (
-    <box alignItems="center" justifyContent="center" flexGrow={1} backgroundColor="#141414">
+    <box
+      alignItems="center"
+      justifyContent="center"
+      flexGrow={1}
+      backgroundColor="#141414"
+    >
       {selectedTool() === "" && (
         <box flexDirection="column" alignItems="center">
           <Hero />
@@ -68,9 +66,13 @@ render(() => {
         </box>
       )}
       {selectedTool() && (
-        <HeaderLayout toolName={getToolName(selectedTool())} onBack={() => setSelectedTool("")}>
-          <Dynamic component={toolComponents[selectedTool()]} />
-        </HeaderLayout>
+        <FileListProvider options={toolFileListOptions[selectedTool()] ?? {}}>
+          <MainUI
+            selectedTool={selectedTool()}
+            toolName={getToolName(selectedTool())}
+            onBack={() => setSelectedTool("")}
+          />
+        </FileListProvider>
       )}
       {escapeCount() === 1 && selectedTool() !== "" && (
         <box

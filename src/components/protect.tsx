@@ -2,12 +2,12 @@ import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { protectPDF } from "../tools/protect";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar, TextInput } from "./ui";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
+import { useFileListContext } from "../provider/fileListProvider";
 
 export function ProtectUI() {
-  const fl = useFileList();
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [userPassword, setUserPassword] = createSignal("");
   const [ownerPassword, setOwnerPassword] = createSignal("");
@@ -138,6 +138,7 @@ export function ProtectUI() {
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
           await fl.addFilesToList(paths);

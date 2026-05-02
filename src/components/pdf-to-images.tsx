@@ -11,15 +11,15 @@ import {
   ToggleRow,
   Toggle,
 } from "./ui";
-import { useFileList } from "../hooks/useFileList";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
+import { useFileListContext } from "../provider/fileListProvider";
 
 type ImageFormat = "png" | "jpg";
 type DPIOption = 72 | 150 | 300;
 
 export function PDFToImagesUI() {
-  const fl = useFileList({ trackPageCount: true });
+  const fl = useFileListContext();
   const nav = useKeyboardNav();
   const [format, setFormat] = createSignal<ImageFormat>("png");
   const [dpi, setDpi] = createSignal<DPIOption>(150);
@@ -154,6 +154,7 @@ export function PDFToImagesUI() {
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
         onSelect={fl.selectFile}
+        onFocusIndex={(index) => nav.focusById(`file-${index}`)}
         onRemove={fl.removeFile}
         onFilesSelected={async (paths) => {
           await fl.addFilesToList(paths);
