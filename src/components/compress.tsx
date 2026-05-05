@@ -2,7 +2,12 @@ import { TextAttributes } from "@opentui/core";
 import { createSignal, Show, createEffect, onCleanup } from "solid-js";
 import { compressPDF, formatFileSize } from "../tools/compress";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
-import { ToolContainer, Label, FileList, ButtonRow, Button, StatusBar } from "./ui";
+import { Button } from "./ui/button";
+import { ButtonRow } from "./ui/button-row";
+import { FileList } from "./ui/file-list";
+import { Label } from "./ui/label";
+import { StatusBar } from "./ui/status-bar";
+import { ToolContainer } from "./ui/tool-container";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { useFileListContext } from "../provider/fileListProvider";
 

@@ -2,12 +2,12 @@ import { describe, expect, it } from "bun:test";
 
 describe("ui component wiring", () => {
   it("has a matching source file", async () => {
-    const file = new URL("../../src/components/ui.tsx", import.meta.url);
+    const file = new URL("../../src/components/ui/index.ts", import.meta.url);
     expect(await Bun.file(file).exists()).toBe(true);
   });
 
   it("wires the file-list open action to open the file instead of reordering", async () => {
-    const file = new URL("../../src/components/ui.tsx", import.meta.url);
+    const file = new URL("../../src/components/ui/file-list.tsx", import.meta.url);
     const code = await Bun.file(file).text();
     const openButtonIndex = code.indexOf('content={"↗"}');
 
