@@ -18,6 +18,7 @@ const toolFileListOptions: Record<string, FileListOptions> = {
   imagesToPDF: { acceptImages: true },
   protect: {},
   decrypt: {},
+  organise: { trackPageCount: true },
 };
 
 render(() => {

@@ -38,19 +38,22 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
   const renderer = useRenderer();
   const fl = useFileListContext();
   const selectedFile = fl.selectedFile;
+  const initialKittySupport = hasKittyGraphics(renderer.capabilities ?? null);
+
   const [page, setPage] = createSignal(1);
   const [layoutVersion, setLayoutVersion] = createSignal(0);
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
-  const initialKittySupport = hasKittyGraphics(renderer.capabilities ?? null);
   const [capabilities, setCapabilities] = createSignal<RendererCapabilities | null>(
     renderer.capabilities ?? null,
   );
   const [kittySupportDetected, setKittySupportDetected] = createSignal(initialKittySupport);
   const [capabilityProbeExpired, setCapabilityProbeExpired] = createSignal(initialKittySupport);
+
   const supported = createMemo(
     () => kittySupportDetected() || hasKittyGraphics(capabilities()),
   );
+
   const [pageCount] = createResource(() => selectedFile(), getPDFPreviewPageCount);
 
   let frameRef: BoxRenderable | undefined;
@@ -59,12 +62,13 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
   let latestZIndex = 0;
   let capabilityProbeTimer: ReturnType<typeof setTimeout> | null = null;
   let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  
   const totalPages = () => Math.max(pageCount() ?? 0, 1);
   const canGoPrev = () => page() > 1;
   const canGoNext = () => page() < totalPages();
   const showSupportProbe = () => Boolean(selectedFile()) && !supported() && !capabilityProbeExpired();
   const showUnsupported = () => Boolean(selectedFile()) && !supported() && capabilityProbeExpired();
-  const showLoading = () => Boolean(selectedFile()) && supported() && isLoading();
+  // const showLoading = () => Boolean(selectedFile()) && supported() && isLoading();
   const showError = () => Boolean(selectedFile()) && supported() && !isLoading() && Boolean(error());
 
   const invalidateLayout = () => {
@@ -108,6 +112,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
       invalidateLayout();
     }, 0);
   };
+
   onResize(() => {
     refreshPreviewLayout();
   });
@@ -299,12 +304,12 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
           />
         </Show>
 
-        <Show when={showLoading()}>
+        {/* <Show when={showLoading()}>
           <PreviewStatusMessage
             color="#b9aaa0"
             content="Rendering page preview..."
           />
-        </Show>
+        </Show> */}
 
         <Show when={showError()}>
           <PreviewStatusMessage

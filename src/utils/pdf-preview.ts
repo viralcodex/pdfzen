@@ -148,14 +148,10 @@ export const getKittyPlacement = (
   const horizontalPadding = Math.max(0, Math.floor((viewport.widthPx - displayWidth) / 2));
   const verticalPadding = Math.max(0, Math.floor((viewport.heightPx - displayHeight) / 2));
   const widthLimited = viewport.widthPx * imageHeight <= viewport.heightPx * imageWidth;
-  const columnOffset = widthLimited
-    ? Math.floor(horizontalPadding / viewport.cellWidthPx)
-    : 0;
-  const rowOffset = widthLimited
-    ? 0
-    : Math.floor(verticalPadding / viewport.cellHeightPx);
-  const offsetX = widthLimited ? horizontalPadding % viewport.cellWidthPx : 0;
-  const offsetY = widthLimited ? 0 : verticalPadding % viewport.cellHeightPx;
+  const columnOffset = Math.floor(horizontalPadding / viewport.cellWidthPx);
+  const rowOffset = Math.floor(verticalPadding / viewport.cellHeightPx);
+  const offsetX = horizontalPadding % viewport.cellWidthPx;
+  const offsetY = verticalPadding % viewport.cellHeightPx;
 
   const placementBase = {
     column: viewport.column + columnOffset,

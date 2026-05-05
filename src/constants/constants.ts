@@ -14,6 +14,7 @@ export const toolsMenu = [
   { name: "Images to PDF", command: "imagesToPDF" },
   { name: "Encrypt PDF", command: "protect" },
   { name: "Decrypt PDF", command: "decrypt" },
+  { name: "Organise PDF", command: "organise" },
 ];
 
 export const EmptyBorderChars = {
