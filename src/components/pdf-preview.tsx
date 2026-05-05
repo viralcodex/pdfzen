@@ -17,7 +17,9 @@ import {
 } from "../utils/pdf-preview";
 import { useFileListContext } from "../provider/fileListProvider";
 import { EmptyBorderChars } from "../constants/constants";
-import { Button, PreviewButton, PreviewStatusMessage } from "./ui";
+import { Button } from "./ui/button";
+import { PreviewButton } from "./ui/preview-button";
+import { PreviewStatusMessage } from "./ui/preview-status-message";
 
 type RendererCapabilities = CliRenderer["capabilities"];
 

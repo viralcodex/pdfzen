@@ -3,17 +3,15 @@ import { useTerminalDimensions } from "@opentui/solid";
 import { extractPDF, splitPDF } from "../tools/split-extract";
 import { getOutputDir, openFile, openOutputFolder } from "../utils/utils";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
-import {
-  ToolContainer,
-  Label,
-  FileList,
-  ButtonRow,
-  Button,
-  StatusBar,
-  ToggleRow,
-  Toggle,
-  TextInput,
-} from "./ui";
+import { Button } from "./ui/button";
+import { ButtonRow } from "./ui/button-row";
+import { FileList } from "./ui/file-list";
+import { Label } from "./ui/label";
+import { StatusBar } from "./ui/status-bar";
+import { TextInput } from "./ui/text-input";
+import { Toggle } from "./ui/toggle";
+import { ToggleRow } from "./ui/toggle-row";
+import { ToolContainer } from "./ui/tool-container";
 import { TextAttributes } from "@opentui/core";
 import { EmptyBorderChars } from "../constants/constants";
 import type { SplitMode, ExtractMode } from "../model";

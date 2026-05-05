@@ -1,17 +1,15 @@
 import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
 import { rotatePDF } from "../tools/rotate";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
-import {
-  ToolContainer,
-  Label,
-  FileList,
-  ButtonRow,
-  Button,
-  StatusBar,
-  ToggleRow,
-  Toggle,
-  TextInput,
-} from "./ui";
+import { Button } from "./ui/button";
+import { ButtonRow } from "./ui/button-row";
+import { FileList } from "./ui/file-list";
+import { Label } from "./ui/label";
+import { StatusBar } from "./ui/status-bar";
+import { TextInput } from "./ui/text-input";
+import { Toggle } from "./ui/toggle";
+import { ToggleRow } from "./ui/toggle-row";
+import { ToolContainer } from "./ui/tool-container";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { TextAttributes } from "@opentui/core";
 import { useFileListContext } from "../provider/fileListProvider";

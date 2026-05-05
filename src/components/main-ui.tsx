@@ -12,7 +12,7 @@ import { DecryptUI } from "./decrypt";
 import { HeaderLayout } from "./header-layout";
 import { PDFPreviewPane } from "./pdf-preview";
 import { useFileListContext } from "../provider/fileListProvider";
-import { Button } from "./ui";
+import { Button } from "./ui/button";
 
 interface MainUIProps {
   selectedTool: string;
@@ -52,7 +52,7 @@ export function MainUI(props: MainUIProps) {
         <box flexGrow={3}>
           <Dynamic component={toolComponents[props.selectedTool]} />
         </box>
-        <box flexGrow={2} width={isPreviewOpen() ? "25%" : 6}>
+        <box flexGrow={2} width={isPreviewOpen() ? "30%" : 6}>
           <Show
             when={isPreviewOpen()}
             fallback={
