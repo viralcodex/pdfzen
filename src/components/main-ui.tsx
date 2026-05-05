@@ -9,6 +9,7 @@ import { PDFToImagesUI } from "./pdf-to-images";
 import { ImagesToPDFUI } from "./images-to-pdf";
 import { ProtectUI } from "./protect";
 import { DecryptUI } from "./decrypt";
+import { OrganiseUI } from "./organise";
 import { HeaderLayout } from "./header-layout";
 import { PDFPreviewPane } from "./pdf-preview";
 import { useFileListContext } from "../provider/fileListProvider";
@@ -30,6 +31,7 @@ const toolComponents: Record<string, () => any> = {
   imagesToPDF: ImagesToPDFUI,
   protect: ProtectUI,
   decrypt: DecryptUI,
+  organise: OrganiseUI,
 };
 
 export function MainUI(props: MainUIProps) {
@@ -45,33 +47,38 @@ export function MainUI(props: MainUIProps) {
       setIsPreviewOpen(false);
     }
   });
-
+  
   return (
     <HeaderLayout toolName={props.toolName} onBack={props.onBack}>
       <box flexDirection="row">
         <box flexGrow={3}>
           <Dynamic component={toolComponents[props.selectedTool]} />
         </box>
-        <box flexGrow={2} width={isPreviewOpen() ? "30%" : 6}>
-          <Show
-            when={isPreviewOpen()}
-            fallback={
-              <box alignItems="flex-start" paddingTop={2}>
-                <Button
-                  disabled={!fl.selectedFile()}
-                  color="yellow"
-                  label="◀"
-                  onClick={() => setIsPreviewOpen(true)}
-                />
-              </box>
-            }
+        <Show when={props.selectedTool !== "organise"}>
+          <box
+            flexGrow={2}
+            width={isPreviewOpen() && fl.fileCount() > 0 ? "30%" : 6}
           >
-            <PDFPreviewPane
-              onOpen={() => setIsPreviewOpen(true)}
-              onClose={() => setIsPreviewOpen(false)}
-            />
-          </Show>
-        </box>
+            <Show
+              when={isPreviewOpen() && fl.fileCount() > 0}
+              fallback={
+                <box alignItems="flex-start" paddingTop={2}>
+                  <Button
+                    disabled={!fl.selectedFile()}
+                    color="yellow"
+                    label="◀"
+                    onClick={() => setIsPreviewOpen(true)}
+                  />
+                </box>
+              }
+            >
+              <PDFPreviewPane
+                onOpen={() => setIsPreviewOpen(true)}
+                onClose={() => setIsPreviewOpen(false)}
+              />
+            </Show>
+          </box>
+        </Show>
       </box>
     </HeaderLayout>
   );
