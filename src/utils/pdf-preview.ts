@@ -108,8 +108,12 @@ export const getPDFPreviewViewport = (
 ): PDFPreviewViewport | null => {
   if (!frame) return null;
 
-  const columns = Math.max(0, frame.width - 2);
-  const rows = Math.max(0, frame.height - 2);
+  const terminalColumns = renderer.terminalWidth || renderer.width;
+  const terminalRows = renderer.terminalHeight || renderer.height;
+  const availableColumns = Math.max(0, terminalColumns - frame.x - 1);
+  const availableRows = Math.max(0, terminalRows - frame.y - 1);
+  const columns = Math.max(0, Math.min(frame.width - 2, availableColumns));
+  const rows = Math.max(0, Math.min(frame.height - 2, availableRows));
 
   if (columns < 8 || rows < 8) {
     return null;
@@ -143,11 +147,15 @@ export const getKittyPlacement = (
   const displayHeight = Math.max(1, Math.round(imageHeight * fitScale));
   const horizontalPadding = Math.max(0, Math.floor((viewport.widthPx - displayWidth) / 2));
   const verticalPadding = Math.max(0, Math.floor((viewport.heightPx - displayHeight) / 2));
-  const columnOffset = Math.floor(horizontalPadding / viewport.cellWidthPx);
-  const rowOffset = Math.floor(verticalPadding / viewport.cellHeightPx);
-  const offsetX = horizontalPadding % viewport.cellWidthPx;
-  const offsetY = verticalPadding % viewport.cellHeightPx;
   const widthLimited = viewport.widthPx * imageHeight <= viewport.heightPx * imageWidth;
+  const columnOffset = widthLimited
+    ? Math.floor(horizontalPadding / viewport.cellWidthPx)
+    : 0;
+  const rowOffset = widthLimited
+    ? 0
+    : Math.floor(verticalPadding / viewport.cellHeightPx);
+  const offsetX = widthLimited ? horizontalPadding % viewport.cellWidthPx : 0;
+  const offsetY = widthLimited ? 0 : verticalPadding % viewport.cellHeightPx;
 
   const placementBase = {
     column: viewport.column + columnOffset,

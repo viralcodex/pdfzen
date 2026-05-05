@@ -636,6 +636,10 @@ export function PreviewButton(props: PreviewButtonProps) {
       border={[
         "bottom",
       ]}
+      customBorderChars={{
+        ...EmptyBorderChars,
+        horizontal: "▂",  
+      }}
       borderColor={props.disabled ? "#3d464c" : "#3498db"}
       backgroundColor={props.disabled ? "#1a1f23" : "#14242e"}
       paddingLeft={1}

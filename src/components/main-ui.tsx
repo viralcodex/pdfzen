@@ -1,4 +1,4 @@
-import { Dynamic } from "@opentui/solid";
+import { Dynamic, useTerminalDimensions } from "@opentui/solid";
 import { createEffect, createSignal, Show } from "solid-js";
 import { MergeUI } from "./merge";
 import { CompressUI } from "./compress";
@@ -35,20 +35,24 @@ const toolComponents: Record<string, () => any> = {
 export function MainUI(props: MainUIProps) {
   const fl = useFileListContext();
   const [isPreviewOpen, setIsPreviewOpen] = createSignal(false);
+  const terminalSize = useTerminalDimensions();
 
   createEffect(() => {
     if (fl.selectedFile()) {
       setIsPreviewOpen(true);
+    }
+    if(terminalSize().width < 50) {
+      setIsPreviewOpen(false);
     }
   });
 
   return (
     <HeaderLayout toolName={props.toolName} onBack={props.onBack}>
       <box flexDirection="row">
-        <box flexGrow={3} minWidth={0}>
+        <box flexGrow={3}>
           <Dynamic component={toolComponents[props.selectedTool]} />
         </box>
-        <box flexGrow={2} minWidth={isPreviewOpen() ? 50 : 6}>
+        <box flexGrow={2} width={isPreviewOpen() ? "25%" : 6}>
           <Show
             when={isPreviewOpen()}
             fallback={

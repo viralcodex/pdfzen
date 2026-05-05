@@ -56,6 +56,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
   let activeZIndex: number | null = null;
   let latestZIndex = 0;
   let capabilityProbeTimer: ReturnType<typeof setTimeout> | null = null;
+  let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   const totalPages = () => Math.max(pageCount() ?? 0, 1);
   const canGoPrev = () => page() > 1;
   const canGoNext = () => page() < totalPages();
@@ -75,6 +76,13 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
     }
   };
 
+  const clearLayoutRefreshTimer = () => {
+    if (layoutRefreshTimer !== null) {
+      clearTimeout(layoutRefreshTimer);
+      layoutRefreshTimer = null;
+    }
+  };
+
   const clearActivePreview = () => {
     if (activeZIndex === null) {
       return;
@@ -84,8 +92,22 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
     activeZIndex = null;
   };
 
+  const cancelPendingPreviewRender = () => {
+    requestVersion += 1;
+  };
+
+  const refreshPreviewLayout = () => {
+    cancelPendingPreviewRender();
+    clearActivePreview();
+
+    clearLayoutRefreshTimer();
+    layoutRefreshTimer = setTimeout(() => {
+      layoutRefreshTimer = null;
+      invalidateLayout();
+    }, 0);
+  };
   onResize(() => {
-    invalidateLayout();
+    refreshPreviewLayout();
   });
 
   const handleCapabilitiesChange = (nextCapabilities: unknown) => {
@@ -99,7 +121,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
       clearCapabilityProbeTimer();
     }
 
-    invalidateLayout();
+    refreshPreviewLayout();
   };
 
   renderer.on("capabilities", handleCapabilitiesChange);
@@ -122,7 +144,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
     capabilityProbeTimer = setTimeout(() => {
       capabilityProbeTimer = null;
       setCapabilityProbeExpired(true);
-      invalidateLayout();
+      refreshPreviewLayout();
     }, 1500);
   });
 
@@ -210,19 +232,14 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
 
   onCleanup(() => {
     renderer.off("capabilities", handleCapabilitiesChange);
-    requestVersion += 1;
+    cancelPendingPreviewRender();
     clearCapabilityProbeTimer();
+    clearLayoutRefreshTimer();
     clearActivePreview();
   });
 
   return (
-    <box
-      flexDirection="column"
-      flexGrow={1}
-      minWidth={34}
-      minHeight={0}
-      paddingTop={2}
-    >
+    <box flexDirection="column" flexGrow={1} minHeight={0} paddingTop={2}>
       <box
         flexDirection="row"
         justifyContent="space-between"
@@ -236,7 +253,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
       <box
         ref={(value) => {
           frameRef = value;
-          invalidateLayout();
+          refreshPreviewLayout();
         }}
         border
         customBorderChars={{
@@ -252,7 +269,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
         backgroundColor="#221b18"
         flexGrow={1}
         minHeight={16}
-        onSizeChange={invalidateLayout}
+        onSizeChange={refreshPreviewLayout}
         onMouseDown={(event: unknown) => {
           if (canStopPropagation(event)) {
             event.stopPropagation?.();
@@ -308,10 +325,12 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
             disabled={!canGoPrev()}
             onClick={() => setPage((value) => Math.max(1, value - 1))}
           />
-          <text
-            fg="#b9aaa0"
-            content={`Page ${page()} / ${pageCount.loading ? "..." : totalPages()}`}
-          />
+          <box paddingBottom={1}>
+            <text
+              fg="#b9aaa0"
+              content={`Page ${page()}/${pageCount.loading ? "..." : totalPages()}`}
+            />
+          </box>
           <PreviewButton
             label="▶"
             disabled={!canGoNext()}
