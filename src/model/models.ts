@@ -174,6 +174,7 @@ export interface PreviewButtonProps {
   label: string;
   disabled: boolean;
   onClick: () => void;
+  focused?: boolean;
 }
 
 export interface PreviewStatusMessageProps {

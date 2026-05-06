@@ -2,6 +2,7 @@ export { Button } from "./button";
 export { ButtonRow } from "./button-row";
 export { FileList } from "./file-list";
 export { Label } from "./label";
+export { PDFPreviewFrame } from "./pdf-preview-frame";
 export { PreviewButton } from "./preview-button";
 export { PreviewStatusMessage } from "./preview-status-message";
 export { StatusBar } from "./status-bar";

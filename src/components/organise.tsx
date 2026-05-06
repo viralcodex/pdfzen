@@ -1,12 +1,14 @@
-import { type BoxRenderable, type CliRenderer } from "@opentui/core";
-import { onResize, useRenderer } from "@opentui/solid";
+import { RGBA, TextAttributes, type BoxRenderable, type CliRenderer, type KeyEvent } from "@opentui/core";
+import { onResize, useKeyboard, useRenderer } from "@opentui/solid";
 import {
   Show,
+  type Accessor,
   createEffect,
   createMemo,
   createResource,
   createSignal,
   onCleanup,
+  type Setter,
 } from "solid-js";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { useFileListContext } from "../provider/fileListProvider";
@@ -23,20 +25,16 @@ import { Label } from "./ui/label";
 import { FileList } from "./ui/file-list";
 import { ButtonRow } from "./ui/button-row";
 import { Button } from "./ui/button";
-import { PreviewStatusMessage } from "./ui/preview-status-message";
 import { StatusBar } from "./ui/status-bar";
 import { PreviewButton } from "./ui/preview-button";
+import { PDFPreviewFrame, TextInput } from "./ui/index";
 
 type RendererCapabilities = CliRenderer["capabilities"];
 
-interface PreviewMouseEvent {
-  stopPropagation?: () => void;
-}
+type CarouselRenderSlot = "previous" | "current" | "next";
 
-type SpreadRenderSlot = "left" | "right";
-
-interface SpreadRenderTask {
-  slot: SpreadRenderSlot;
+interface CarouselRenderTask {
+  slot: CarouselRenderSlot;
   result: Awaited<ReturnType<typeof renderPDFPreviewPage>>;
   viewport: ReturnType<typeof getPDFPreviewViewport> extends infer T
     ? Exclude<T, null>
@@ -46,25 +44,31 @@ interface SpreadRenderTask {
 interface OrganisePDFToolWindowProps {
   onClose: () => void;
   closeFocused: boolean;
-  addPageBefore: () => void;
-  addPageAfter: () => void;
-  addBeforeFocused: boolean;
-  addBetweenFocused: boolean;
-  addAfterFocused: boolean;
+  currentPage: Accessor<number>;
+  goPrev: () => void;
+  goNext: () => void;
+  prevFocused: boolean;
+  nextFocused: boolean;
+  movePageInput: () => string;
+  movePageInputFocused: boolean;
+  movePageButtonFocused: boolean;
+  onMovePageInput: Setter<string>;
+  onMovePageFocus: () => void;
+  deletePage: () => void;
+  deleteFocused: boolean;
+  savePdf: () => void;
+  saveFocused: boolean;
+  movePage: () => void;
 }
 
 const hasKittyGraphics = (capabilities: RendererCapabilities | null) =>
   Boolean(capabilities?.kitty_graphics);
-
-const canStopPropagation = (event: unknown): event is PreviewMouseEvent =>
-  typeof event === "object" && event !== null;
 
 function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
   const renderer = useRenderer();
   const fl = useFileListContext();
   const selectedFile = fl.selectedFile;
   const initialKittySupport = hasKittyGraphics(renderer.capabilities ?? null);
-  const [spreadStartPage, setSpreadStartPage] = createSignal(1);
   const [layoutVersion, setLayoutVersion] = createSignal(0);
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
@@ -74,7 +78,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     createSignal(initialKittySupport);
   const [capabilityProbeExpired, setCapabilityProbeExpired] =
     createSignal(initialKittySupport);
-
+  
   const supported = createMemo(
     () => kittySupportDetected() || hasKittyGraphics(capabilities()),
   );
@@ -83,21 +87,25 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     getPDFPreviewPageCount,
   );
 
-  let leftFrameRef: BoxRenderable | undefined;
-  let rightFrameRef: BoxRenderable | undefined;
+  let previousFrameRef: BoxRenderable | undefined;
+  let currentFrameRef: BoxRenderable | undefined;
+  let nextFrameRef: BoxRenderable | undefined;
   let requestVersion = 0;
-  let leftZIndex: number | null = null;
-  let rightZIndex: number | null = null;
+  let previousZIndex: number | null = null;
+  let currentZIndex: number | null = null;
+  let nextZIndex: number | null = null;
   let latestZIndex = 0;
   let capabilityProbeTimer: ReturnType<typeof setTimeout> | null = null;
   let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   const totalPages = () => pageCount() ?? 0;
-  const leftPage = () => spreadStartPage();
-  const rightPage = () => spreadStartPage() + 1;
-  const hasRightPage = () => rightPage() <= totalPages();
-  const canGoPrev = () => spreadStartPage() > 1;
-  const canGoNext = () => hasRightPage();
+  const currentPage = props.currentPage;
+  const previousPage = () => currentPage() - 1;
+  const nextPage = () => currentPage() + 1;
+  const hasPreviousPage = () => previousPage() >= 1;
+  const hasNextPage = () => nextPage() <= totalPages();
+  const canGoPrev = () => hasPreviousPage();
+  const canGoNext = () => hasNextPage();
   const showSupportProbe = () =>
     Boolean(selectedFile()) && !supported() && !capabilityProbeExpired();
   const showUnsupported = () =>
@@ -125,27 +133,37 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     }
   };
 
-  const clearLeftPreview = () => {
-    if (leftZIndex === null) {
+  const clearPreviousPreview = () => {
+    if (previousZIndex === null) {
       return;
     }
 
-    clearPDFPreview(renderer, leftZIndex);
-    leftZIndex = null;
+    clearPDFPreview(renderer, previousZIndex);
+    previousZIndex = null;
   };
 
-  const clearRightPreview = () => {
-    if (rightZIndex === null) {
+  const clearCurrentPreview = () => {
+    if (currentZIndex === null) {
       return;
     }
 
-    clearPDFPreview(renderer, rightZIndex);
-    rightZIndex = null;
+    clearPDFPreview(renderer, currentZIndex);
+    currentZIndex = null;
   };
 
-  const clearPreviewPair = () => {
-    clearLeftPreview();
-    clearRightPreview();
+  const clearNextPreview = () => {
+    if (nextZIndex === null) {
+      return;
+    }
+
+    clearPDFPreview(renderer, nextZIndex);
+    nextZIndex = null;
+  };
+
+  const clearCarouselPreviews = () => {
+    clearPreviousPreview();
+    clearCurrentPreview();
+    clearNextPreview();
   };
 
   const cancelPendingPreviewRender = () => {
@@ -154,7 +172,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
 
   const refreshPreviewLayout = () => {
     cancelPendingPreviewRender();
-    clearPreviewPair();
+    clearCarouselPreviews();
 
     clearLayoutRefreshTimer();
     layoutRefreshTimer = setTimeout(() => {
@@ -208,27 +226,14 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
 
   createEffect(() => {
     selectedFile();
-    setSpreadStartPage(1);
     setError(null);
   });
 
   createEffect(() => {
-    const total = totalPages();
-
-    if (total === 0) {
-      setSpreadStartPage(1);
-      return;
-    }
-
-    if (spreadStartPage() > total) {
-      setSpreadStartPage(total % 2 === 0 ? Math.max(1, total - 1) : total);
-    }
-  });
-
-  createEffect(() => {
     const file = selectedFile();
-    const currentLeftPage = leftPage();
-    const currentRightPage = rightPage();
+    const activePage = currentPage();
+    const leftNeighborPage = previousPage();
+    const rightNeighborPage = nextPage();
     const total = totalPages();
     const isSupported = supported();
     layoutVersion();
@@ -236,20 +241,21 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     requestVersion += 1;
     const currentRequest = requestVersion;
 
-    if (!file || !leftFrameRef || !rightFrameRef || !isSupported) {
+    if (!file || !previousFrameRef || !currentFrameRef || !nextFrameRef || !isSupported) {
       setIsLoading(false);
       setError(null);
-      clearPreviewPair();
+      clearCarouselPreviews();
       return;
     }
 
-    const leftViewport = getPDFPreviewViewport(renderer, leftFrameRef);
-    const rightViewport = getPDFPreviewViewport(renderer, rightFrameRef);
+    const previousViewport = getPDFPreviewViewport(renderer, previousFrameRef);
+    const currentViewport = getPDFPreviewViewport(renderer, currentFrameRef);
+    const nextViewport = getPDFPreviewViewport(renderer, nextFrameRef);
 
-    if (!leftViewport || !rightViewport) {
+    if (!previousViewport || !currentViewport || !nextViewport) {
       setIsLoading(false);
-      setError("Spread preview area is too small for inline page rendering.");
-      clearPreviewPair();
+      setError("Carousel preview area is too small for inline page rendering.");
+      clearCarouselPreviews();
       return;
     }
 
@@ -258,23 +264,35 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
 
     void (async () => {
       try {
-        const renders: Promise<SpreadRenderTask>[] = [
-          renderPDFPreviewPage(file, currentLeftPage, leftViewport).then(
+        const renders: Promise<CarouselRenderTask>[] = [
+          renderPDFPreviewPage(file, activePage, currentViewport).then(
             (result) => ({
-              slot: "left" as const,
+              slot: "current" as const,
               result,
-              viewport: leftViewport,
+              viewport: currentViewport,
             }),
           ),
         ];
 
-        if (currentRightPage <= total) {
+        if (leftNeighborPage >= 1) {
           renders.push(
-            renderPDFPreviewPage(file, currentRightPage, rightViewport).then(
+            renderPDFPreviewPage(file, leftNeighborPage, previousViewport).then(
               (result) => ({
-                slot: "right" as const,
+                slot: "previous" as const,
                 result,
-                viewport: rightViewport,
+                viewport: previousViewport,
+              }),
+            ),
+          );
+        }
+
+        if (rightNeighborPage <= total) {
+          renders.push(
+            renderPDFPreviewPage(file, rightNeighborPage, nextViewport).then(
+              (result) => ({
+                slot: "next" as const,
+                result,
+                viewport: nextViewport,
               }),
             ),
           );
@@ -286,22 +304,38 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
           return;
         }
 
-        let renderedRightPage = false;
+        let renderedPreviousPage = false;
+        let renderedNextPage = false;
 
         results.forEach(({ slot, result, viewport }) => {
-          const nextZIndex = ++latestZIndex;
+          const nextLayer = ++latestZIndex;
 
-          if (slot === "left") {
+          if (slot === "previous") {
             displayPDFPreview(
               renderer,
               viewport,
               result.width,
               result.height,
               result.png,
-              nextZIndex,
-              leftZIndex,
+              nextLayer,
+              previousZIndex,
             );
-            leftZIndex = nextZIndex;
+            previousZIndex = nextLayer;
+            renderedPreviousPage = true;
+            return;
+          }
+
+          if (slot === "current") {
+            displayPDFPreview(
+              renderer,
+              viewport,
+              result.width,
+              result.height,
+              result.png,
+              nextLayer,
+              currentZIndex,
+            );
+            currentZIndex = nextLayer;
             return;
           }
 
@@ -311,15 +345,19 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
             result.width,
             result.height,
             result.png,
+            nextLayer,
             nextZIndex,
-            rightZIndex,
           );
-          rightZIndex = nextZIndex;
-          renderedRightPage = true;
+          nextZIndex = nextLayer;
+          renderedNextPage = true;
         });
 
-        if (!renderedRightPage) {
-          clearRightPreview();
+        if (!renderedPreviousPage) {
+          clearPreviousPreview();
+        }
+
+        if (!renderedNextPage) {
+          clearNextPreview();
         }
 
         setIsLoading(false);
@@ -328,12 +366,12 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
           return;
         }
 
-        clearPreviewPair();
+        clearCarouselPreviews();
         setIsLoading(false);
         setError(
           previewError instanceof Error
             ? previewError.message
-            : "Unable to render the selected PDF spread.",
+            : "Unable to render the selected PDF page.",
         );
       }
     })();
@@ -344,7 +382,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     cancelPendingPreviewRender();
     clearCapabilityProbeTimer();
     clearLayoutRefreshTimer();
-    clearPreviewPair();
+    clearCarouselPreviews();
   });
 
   return (
@@ -361,197 +399,253 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
           onClick={props.onClose}
           focused={props.closeFocused}
         />
+        <box
+          width={"100%"}
+          flexDirection="row"
+          justifyContent="center"
+          alignItems="center"
+        >
+          <text
+            fg="#d8c7b8"
+            attributes={TextAttributes.BOLD}
+            content="Reorder, Delete or Insert Pages in a PDF"
+          />
+        </box>
       </box>
-      <box flexDirection="row" columnGap={1} flexGrow={1} minHeight={18}>
-        <box flexDirection="column" flexGrow={1} rowGap={1} width={`100%`}>
-          <box
-            ref={(value) => {
-              leftFrameRef = value;
-              refreshPreviewLayout();
-            }}
-            // border
-            // customBorderChars={{
-            //   ...EmptyBorderChars,
-            //   topLeft: "┏",
-            //   topRight: "┓",
-            //   bottomLeft: "┗",
-            //   bottomRight: "┛",
-            //   horizontal: "━",
-            //   vertical: "┃",
-            // }}
-            // borderColor={supported() ? "#7c6559" : "#4d443f"}
-            // backgroundColor="#221b18"
-            flexGrow={1}
-            minHeight={16}
-            alignItems="center"
-            justifyContent="center"
-            onSizeChange={refreshPreviewLayout}
-            onMouseDown={(event: unknown) => {
-              if (canStopPropagation(event)) {
-                event.stopPropagation?.();
-              }
-            }}
-          >
-            <Show when={!selectedFile()}>
-              <PreviewStatusMessage
-                color="#8c7f78"
-                content="Select a PDF to organise."
-              />
-            </Show>
-            <Show when={showSupportProbe()}>
-              <PreviewStatusMessage
-                color="#8c7f78"
-                content="Checking terminal preview support..."
-              />
-            </Show>
-            <Show when={showUnsupported()}>
-              <PreviewStatusMessage
-                color="#8c7f78"
-                content="Inline preview currently requires Kitty graphics support."
-              />
-            </Show>
-            {/* <Show when={showLoading()}>
-              <PreviewStatusMessage
-                color="#b9aaa0"
-                content="Rendering spread preview..."
-              />
-            </Show> */}
-            <Show when={showError()}>
-              <PreviewStatusMessage
-                color="#d08a6d"
-                content={error() ?? "Unable to render preview."}
-              />
-            </Show>
+      <box
+        flexDirection="row"
+        columnGap={2}
+        flexGrow={1}
+        minHeight={18}
+        alignItems="stretch"
+      >
+        <box flexDirection="column" flexGrow={1} rowGap={0} width={`100%`}>
+          <box justifyContent="center" alignItems="center" height={1}>
+            <text
+              fg="#4f565d"
+              content={hasPreviousPage() ? `Page ${previousPage()}` : "End"}
+            />
+          </box>
+          <box flexGrow={1} alignItems="center" justifyContent="center">
+            <PDFPreviewFrame
+              setFrameRef={(value: BoxRenderable | undefined) => {
+                previousFrameRef = value;
+              }}
+              onLayoutChange={refreshPreviewLayout}
+              hasFile={Boolean(selectedFile())}
+              supported={supported()}
+              showSupportProbe={showSupportProbe()}
+              showUnsupported={showUnsupported()}
+              showError={showError()}
+              errorMessage={error() ?? "Unable to render preview."}
+              emptyMessage="Select a PDF to organise."
+              border={false}
+              backgroundColor="#161616"
+              width="72%"
+              height="68%"
+              minHeight={9}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Show
+                when={
+                  selectedFile() &&
+                  supported() &&
+                  !showError() &&
+                  hasPreviousPage()
+                }
+              >
+                <box
+                  position="absolute"
+                  top={0}
+                  right={0}
+                  bottom={0}
+                  left={0}
+                  backgroundColor={RGBA.fromInts(18, 18, 18, 128)}
+                />
+              </Show>
+              <Show
+                when={
+                  selectedFile() &&
+                  supported() &&
+                  !showError() &&
+                  !hasPreviousPage()
+                }
+              >
+                <text fg="#5f6770" content="No previous page" />
+              </Show>
+            </PDFPreviewFrame>
           </box>
         </box>
-        <box border={["left"]} width={1}></box>
-        <box flexDirection="column" flexGrow={1} rowGap={1} width={`100%`}>
-          <box
-            ref={(value) => {
-              rightFrameRef = value;
-              refreshPreviewLayout();
+        <box border={["left"]} borderColor="#34495e" width={1}></box>
+        <box flexDirection="column" flexGrow={6} rowGap={1} width={`100%`}>
+          <box justifyContent="center" alignItems="center">
+            <text
+              fg="#d8c7b8"
+              attributes={TextAttributes.BOLD}
+              content={`Page ${currentPage()}`}
+            />
+          </box>
+          <PDFPreviewFrame
+            setFrameRef={(value: BoxRenderable | undefined) => {
+              currentFrameRef = value;
             }}
-            // border
-            // customBorderChars={{
-            //   ...EmptyBorderChars,
-            //   topLeft: "┏",
-            //   topRight: "┓",
-            //   bottomLeft: "┗",
-            //   bottomRight: "┛",
-            //   horizontal: "━",
-            //   vertical: "┃",
-            // }}
-            // borderColor={supported() ? "#7c6559" : "#4d443f"}
-            // backgroundColor="#221b18"
-            flexGrow={1}
-            minHeight={16}
-            justifyContent="center"
+            onLayoutChange={refreshPreviewLayout}
+            hasFile={Boolean(selectedFile())}
+            supported={supported()}
+            showSupportProbe={showSupportProbe()}
+            showUnsupported={showUnsupported()}
+            showLoading={showLoading()}
+            loadingMessage="Rendering page preview..."
+            showError={showError()}
+            errorMessage={error() ?? "Unable to render preview."}
+            emptyMessage="Select a PDF to organise."
+            border={false}
+            backgroundColor="#221b18"
+            minHeight={18}
             alignItems="center"
-            onSizeChange={refreshPreviewLayout}
-            onMouseDown={(event: unknown) => {
-              if (canStopPropagation(event)) {
-                event.stopPropagation?.();
-              }
-            }}
-          >
-            <Show when={!selectedFile()}>
-              <PreviewStatusMessage
-                color="#8c7f78"
-                content="Select a PDF to organise."
-              />
-            </Show>
-            <Show when={showSupportProbe()}>
-              <PreviewStatusMessage
-                color="#8c7f78"
-                content="Checking terminal preview support..."
-              />
-            </Show>
-            <Show when={showUnsupported()}>
-              <PreviewStatusMessage
-                color="#8c7f78"
-                content="Inline preview currently requires Kitty graphics support."
-              />
-            </Show>
-            <Show when={showLoading() && hasRightPage()}>
-              <PreviewStatusMessage
-                color="#b9aaa0"
-                content="Rendering spread preview..."
-              />
-            </Show>
-            <Show when={showError()}>
-              <PreviewStatusMessage
-                color="#d08a6d"
-                content={error() ?? "Unable to render preview."}
-              />
-            </Show>
-            <Show
-              when={
-                selectedFile() &&
-                supported() &&
-                !showLoading() &&
-                !showError() &&
-                !hasRightPage()
-              }
+            justifyContent="center"
+          />
+        </box>
+        <box border={["left"]} borderColor="#34495e" width={1}></box>
+        <box flexDirection="column" flexGrow={1} rowGap={0} width={`100%`}>
+          <box justifyContent="center" alignItems="center" height={1}>
+            <text
+              fg="#4f565d"
+              content={hasNextPage() ? `Page ${nextPage()}` : "End"}
+            />
+          </box>
+          <box flexGrow={1} alignItems="center" justifyContent="center">
+            <PDFPreviewFrame
+              setFrameRef={(value: BoxRenderable | undefined) => {
+                nextFrameRef = value;
+              }}
+              onLayoutChange={refreshPreviewLayout}
+              hasFile={Boolean(selectedFile())}
+              supported={supported()}
+              showSupportProbe={showSupportProbe()}
+              showUnsupported={showUnsupported()}
+              showError={showError()}
+              errorMessage={error() ?? "Unable to render preview."}
+              emptyMessage="Select a PDF to organise."
+              border={false}
+              backgroundColor="#161616"
+              width="72%"
+              height="68%"
+              minHeight={9}
+              alignItems="center"
+              justifyContent="center"
             >
-              <PreviewStatusMessage
-                color="#8c7f78"
-                content="No second page in this spread."
-              />
-            </Show>
+              <Show
+                when={
+                  selectedFile() && supported() && !showError() && hasNextPage()
+                }
+              >
+                <box
+                  position="absolute"
+                  top={0}
+                  right={0}
+                  bottom={0}
+                  left={0}
+                  backgroundColor={RGBA.fromInts(18, 18, 18, 128)}
+                />
+              </Show>
+              <Show
+                when={
+                  selectedFile() &&
+                  supported() &&
+                  !showError() &&
+                  !hasNextPage()
+                }
+              >
+                <text fg="#5f6770" content="No next page" />
+              </Show>
+            </PDFPreviewFrame>
           </box>
         </box>
       </box>
       <Show when={selectedFile()}>
         <box
-          flexDirection="row"
+          flexDirection="column"
           alignItems="center"
           justifyContent="center"
           columnGap={1}
           paddingTop={1}
+          width={"100%"}
         >
-          <PreviewButton
-            label="◀"
-            disabled={!canGoPrev()}
-            onClick={() =>
-              setSpreadStartPage((value) => Math.max(1, value - 2))
-            }
-          />
-          <box paddingBottom={1}>
-            <text
-              fg="#b9aaa0"
-              content={`Spread ${leftPage()}-${Math.min(rightPage(), Math.max(totalPages(), 1))}/${pageCount.loading ? "..." : totalPages()}`}
+          <box
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
+            columnGap={1}
+          >
+            <PreviewButton
+              label="◀"
+              disabled={!canGoPrev()}
+              onClick={props.goPrev}
+              focused={props.prevFocused}
+            />
+            <box paddingBottom={1}>
+              <text
+                fg="#b9aaa0"
+                content={`Page ${currentPage()}/${pageCount.loading ? "..." : totalPages()}`}
+              />
+            </box>
+            <PreviewButton
+              label="▶"
+              disabled={!canGoNext()}
+              onClick={props.goNext}
+              focused={props.nextFocused}
             />
           </box>
-          <PreviewButton
-            label="▶"
-            disabled={!canGoNext()}
-            onClick={() =>
-              setSpreadStartPage((value) => Math.min(totalPages(), value + 2))
-            }
-          />
+          <box
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            columnGap={1}
+            flexGrow={1}
+            flexShrink={0}
+            width={"100%"}
+          >
+            <box flexDirection="column" alignItems="stretch" width={"20%"}>
+              <TextInput
+                label="Move page to"
+                value={props.movePageInput}
+                focused={props.movePageInputFocused}
+                onFocus={props.onMovePageFocus}
+                onInput={props.onMovePageInput}
+                marginBottom={1}
+                width={"100%"}
+              />
+              <Button
+                label="Move Page"
+                color="cyan"
+                onClick={props.movePage}
+                focused={props.movePageButtonFocused}
+                width={"100%"}
+              />
+              <box marginTop={1}>
+                <Button
+                  label="Delete Page"
+                  color="red"
+                  onClick={props.deletePage}
+                  focused={props.deleteFocused}
+                  width={"100%"}
+                />
+              </box>
+              <box marginTop={1}>
+                <Button
+                  label="Save PDF"
+                  color="green"
+                  onClick={props.savePdf}
+                  focused={props.saveFocused}
+                  width={"100%"}
+                />
+              </box>
+            </box>
+          </box>
         </box>
       </Show>
-      <box flexDirection="row" justifyContent="space-between" columnGap={1}>
-        <Button
-          label="+"
-          color="cyan"
-          onClick={props.addPageBefore}
-          focused={props.addBeforeFocused}
-        />
-        <Button
-          label="+"
-          color="cyan"
-          onClick={props.addPageAfter}
-          focused={props.addBetweenFocused}
-        />
-        <Button
-          label="+"
-          color="cyan"
-          onClick={props.addPageAfter}
-          focused={props.addAfterFocused}
-          disabled={!hasRightPage()}
-        />
-      </box>
     </box>
   );
 }
@@ -562,6 +656,9 @@ export function OrganiseUI() {
   const [isToolWindowOpen, setIsToolWindowOpen] = createSignal(false);
   const openToolWindow = () => setIsToolWindowOpen(true);
   const closeToolWindow = () => setIsToolWindowOpen(false);
+  const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
+  const [currentPage, setCurrentPage] = createSignal(1);
+  const [movePageInput, setMovePageInput] = createSignal("");
 
   createEffect(() => {
     nav.clearElements();
@@ -574,23 +671,42 @@ export function OrganiseUI() {
       });
 
       nav.registerElement({
-        id: "add-page-before-btn",
+        id: "organise-prev-btn",
         type: "button",
-        onEnter: addPageBefore,
+        onEnter: goPrev,
+      });
+
+      nav.registerElement({
+        id: "organise-next-btn",
+        type: "button",
+        onEnter: goNext,
+      });
+
+      nav.registerElement({
+        id: "move-page-input",
+        type: "input",
+        onEnter: () => setFocusedInput("move-page-input"),
+        canFocus: () => Boolean(fl.selectedFile()),
+      });
+       
+      nav.registerElement({
+        id: "move-page-btn",
+        type: "button",
+        onEnter: movePage,
         canFocus: () => Boolean(fl.selectedFile()),
       });
 
       nav.registerElement({
-        id: "add-page-between-btn",
+        id: "delete-page-btn",
         type: "button",
-        onEnter: addPageAfter,
+        onEnter: deletePage,
         canFocus: () => Boolean(fl.selectedFile()),
       });
 
       nav.registerElement({
-        id: "add-page-after-btn",
+        id: "save-pdf-btn",
         type: "button",
-        onEnter: addPageAfter,
+        onEnter: savePdf,
         canFocus: () => Boolean(fl.selectedFile()),
       });
 
@@ -652,12 +768,104 @@ export function OrganiseUI() {
     });
   });
 
+  createEffect(() => {
+    nav.setIsInputMode(focusedInput() !== null);
+  });
+
+  createEffect(() => {
+    if (!nav.isInputMode()) {
+      setFocusedInput(null);
+    }
+  });
+
+  createEffect(() => {
+    const selected = fl.selectedFile();
+
+    if (!selected) {
+      setCurrentPage(1);
+      setMovePageInput("");
+      return;
+    }
+
+    setCurrentPage(1);
+
+    if (focusedInput() !== "move-page-input") {
+      setMovePageInput("1");
+    }
+  });
+
+  createEffect(() => {
+    const total = Math.max(fl.pageCount(), 1);
+    const clampedPage = Math.min(Math.max(currentPage(), 1), total);
+
+    if (clampedPage !== currentPage()) {
+      setCurrentPage(clampedPage);
+    }
+
+    if (focusedInput() !== "move-page-input") {
+      setMovePageInput(String(clampedPage));
+    }
+  });
+
   onCleanup(() => {
     nav.clearElements();
   });
 
-  const addPageBefore = () => {};
-  const addPageAfter = () => {};
+  const activePage = currentPage;
+
+  const handleMovePageInput: Setter<string> = (value) => {
+    const nextValue =
+      typeof value === "function"
+        ? (value as (prev: string) => string)(movePageInput())
+        : value;
+    setMovePageInput(nextValue);
+
+    const parsed = Number.parseInt(nextValue, 10);
+
+    if (!Number.isNaN(parsed)) {
+      const clamped = Math.min(Math.max(parsed, 1), Math.max(fl.pageCount(), 1));
+      setCurrentPage(clamped);
+    }
+
+    return nextValue;
+  };
+
+  const goPrev = () => {
+    if (activePage() <= 1) {
+      return;
+    }
+
+    const nextPage = activePage() - 1;
+    setCurrentPage(nextPage);
+  };
+
+  const goNext = () => {
+    if (activePage() >= fl.pageCount()) {
+      return;
+    }
+
+    const nextPage = activePage() + 1;
+    setCurrentPage(nextPage);
+  };
+
+  const savePdf = () => {};
+  const deletePage = () => {};
+  const movePage = () => {};
+
+  useKeyboard((event: KeyEvent) => {
+    if (!isToolWindowOpen() || nav.isInputMode() || !fl.selectedFile()) {
+      return;
+    }
+
+    if (event.name === "left") {
+      goPrev();
+      return;
+    }
+
+    if (event.name === "right") {
+      goNext();
+    }
+  });
 
   return (
     <ToolContainer paddingTop={1}>
@@ -692,37 +900,49 @@ export function OrganiseUI() {
         <OrganisePDFToolWindow
           onClose={closeToolWindow}
           closeFocused={nav.isFocused("close-organise-btn")}
-          addPageBefore={addPageBefore}
-          addPageAfter={addPageAfter}
-          addBeforeFocused={nav.isFocused("add-page-before-btn")}
-          addBetweenFocused={nav.isFocused("add-page-between-btn")}
-          addAfterFocused={nav.isFocused("add-page-after-btn")}
+          currentPage={currentPage}
+          goPrev={goPrev}
+          goNext={goNext}
+          prevFocused={nav.isFocused("organise-prev-btn")}
+          nextFocused={nav.isFocused("organise-next-btn")}
+          movePageInputFocused={
+            focusedInput() === "move-page-input" ||
+            nav.isFocused("move-page-input")
+          }
+          movePageButtonFocused={nav.isFocused("move-page-btn")}
+          movePageInput={movePageInput}
+          onMovePageInput={handleMovePageInput}
+          deletePage={deletePage}
+          deleteFocused={nav.isFocused("delete-page-btn")}
+          savePdf={savePdf}
+          saveFocused={nav.isFocused("save-pdf-btn")}
+          movePage={movePage}
+          onMovePageFocus={() => setFocusedInput("move-page-input")}
+          
         />
       </Show>
       <ButtonRow>
         <Show when={!isToolWindowOpen()}>
-          <>
-            <Button
-              label="Organise Pages"
-              color="cyan"
-              disabled={fl.fileCount() === 0}
-              onClick={openToolWindow}
-              focused={nav.isFocused("open-organise-btn")}
-            />
-            <Button
-              label="Open Output"
-              color="output"
-              onClick={() =>
-                openOutputFolder().catch((_) =>
-                  fl.setStatus({
-                    msg: "Failed to open folder",
-                    type: "error",
-                  }),
-                )
-              }
-              focused={nav.isFocused("open-output-btn")}
-            />
-          </>
+          <Button
+            label="Organise Pages"
+            color="cyan"
+            disabled={fl.fileCount() === 0}
+            onClick={openToolWindow}
+            focused={nav.isFocused("open-organise-btn")}
+          />
+          <Button
+            label="Open Output"
+            color="output"
+            onClick={() =>
+              openOutputFolder().catch((_) =>
+                fl.setStatus({
+                  msg: "Failed to open folder",
+                  type: "error",
+                }),
+              )
+            }
+            focused={nav.isFocused("open-output-btn")}
+          />
         </Show>
       </ButtonRow>
       <StatusBar message={fl.status().msg} type={fl.status().type} />
