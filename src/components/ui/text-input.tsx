@@ -24,10 +24,10 @@ export function TextInput(props: TextInputProps) {
       flexDirection="column"
       marginTop={props.marginTop ?? 1}
       marginBottom={props.marginBottom ?? 1}
-      alignItems="flex-start"
+      alignItems="stretch"
       flexShrink={0}
       flexGrow={props.flexGrow}
-      width={props.width}
+      width={props.width ?? "100%"}
     >
       <text fg="#ecf0f1" attributes={TextAttributes.BOLD} content={props.label} />
       <box
@@ -42,7 +42,7 @@ export function TextInput(props: TextInputProps) {
         backgroundColor="#1a1a1a"
         padding={1}
         paddingBottom={2}
-        width={props.width ?? "100%"}
+        width="100%"
       >
         <input
           focused={props.focused}
@@ -51,6 +51,7 @@ export function TextInput(props: TextInputProps) {
           onSubmit={props.onSubmit}
           placeholder={props.placeholder}
           onMouseDown={props.onFocus}
+          width={"100%"}
         />
       </box>
     </box>

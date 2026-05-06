@@ -16,22 +16,14 @@ import {
   renderPDFPreviewPage,
 } from "../utils/pdf-preview";
 import { useFileListContext } from "../provider/fileListProvider";
-import { EmptyBorderChars } from "../constants/constants";
 import { Button } from "./ui/button";
 import { PreviewButton } from "./ui/preview-button";
-import { PreviewStatusMessage } from "./ui/preview-status-message";
+import { PDFPreviewFrame } from "./ui/index";
 
 type RendererCapabilities = CliRenderer["capabilities"];
 
-interface PreviewMouseEvent {
-  stopPropagation?: () => void;
-}
-
 const hasKittyGraphics = (capabilities: RendererCapabilities | null) =>
   Boolean(capabilities?.kitty_graphics);
-
-const canStopPropagation = (event: unknown): event is PreviewMouseEvent =>
-  typeof event === "object" && event !== null;
 
 
 export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void }) {
@@ -257,67 +249,20 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
         <text fg="#d8c7b8" attributes={TextAttributes.BOLD} content="Preview" />
         <Button color="red" label="X" onClick={props.onClose} />
       </box>
-      <box
-        ref={(value) => {
+      <PDFPreviewFrame
+        setFrameRef={(value: BoxRenderable | undefined) => {
           frameRef = value;
-          refreshPreviewLayout();
         }}
-        border
-        customBorderChars={{
-          ...EmptyBorderChars,
-          topLeft: "┏",
-          topRight: "┓",
-          bottomLeft: "┗",
-          bottomRight: "┛",
-          horizontal: "━",
-          vertical: "┃",
-        }}
-        borderColor={supported() ? "#7c6559" : "#4d443f"}
+        onLayoutChange={refreshPreviewLayout}
+        hasFile={Boolean(selectedFile())}
+        supported={supported()}
+        showSupportProbe={showSupportProbe()}
+        showUnsupported={showUnsupported()}
+        showError={showError()}
+        errorMessage={error() ?? "Unable to render preview."}
+        emptyMessage="Select a PDF to preview."
         backgroundColor="#221b18"
-        flexGrow={1}
-        minHeight={16}
-        onSizeChange={refreshPreviewLayout}
-        onMouseDown={(event: unknown) => {
-          if (canStopPropagation(event)) {
-            event.stopPropagation?.();
-          }
-        }}
-      >
-        <Show when={!selectedFile()}>
-          <PreviewStatusMessage
-            color="#8c7f78"
-            content="Select a PDF to preview."
-          />
-        </Show>
-
-        <Show when={showSupportProbe()}>
-          <PreviewStatusMessage
-            color="#8c7f78"
-            content="Checking terminal preview support..."
-          />
-        </Show>
-
-        <Show when={showUnsupported()}>
-          <PreviewStatusMessage
-            color="#8c7f78"
-            content="Inline preview currently requires Kitty graphics support."
-          />
-        </Show>
-
-        {/* <Show when={showLoading()}>
-          <PreviewStatusMessage
-            color="#b9aaa0"
-            content="Rendering page preview..."
-          />
-        </Show> */}
-
-        <Show when={showError()}>
-          <PreviewStatusMessage
-            color="#d08a6d"
-            content={error() ?? "Unable to render preview."}
-          />
-        </Show>
-      </box>
+      />
       <Show when={selectedFile()}>
         <box
           flexDirection="row"

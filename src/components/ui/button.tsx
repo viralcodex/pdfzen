@@ -8,6 +8,7 @@ interface ButtonProps {
   disabled?: boolean;
   onClick: () => void;
   focused?: boolean;
+  width?: number | "auto" | `${number}%`;
 }
 
 export function Button(props: ButtonProps) {
@@ -18,9 +19,9 @@ export function Button(props: ButtonProps) {
     if (props.disabled) return { bg: "#2a2a2a", border: "#444444" };
     switch (props.color) {
       case "green":
-        return { bg: "#1e3a28", border: "#27ae60" };
+        return { bg: "#1e3a28", border: "#3bff8c" };
       case "cyan":
-        return { bg: "#1a2f3a", border: "#3498db" };
+        return { bg: "#1a2f3a", border: "#34aeff" };
       case "output":
         return { bg: "#14353d", border: "#68ffc0" };
       case "yellow":
@@ -36,8 +37,8 @@ export function Button(props: ButtonProps) {
 
   const getTextColor = () => {
     if (props.disabled) return "#7f8c8d";
-    if (isHighlighted() || props.color === "output") return "#68ffc0";
-    return props.color;
+    if (isHighlighted() || props.color === "output") return getColor().border;
+    return getColor().border;
   };
 
   return (
@@ -55,6 +56,7 @@ export function Button(props: ButtonProps) {
       paddingRight={2}
       paddingTop={1}
       paddingBottom={1}
+      width={props.width}
       justifyContent="center"
       alignItems="center"
       onMouseDown={props.disabled ? undefined : props.onClick}
