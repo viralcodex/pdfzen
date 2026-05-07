@@ -43,11 +43,11 @@ export function MainUI(props: MainUIProps) {
     if (fl.selectedFile()) {
       setIsPreviewOpen(true);
     }
-    if(terminalSize().width < 50) {
+    if (terminalSize().width < 50) {
       setIsPreviewOpen(false);
     }
   });
-  
+
   return (
     <HeaderLayout toolName={props.toolName} onBack={props.onBack}>
       <box flexDirection="row">
@@ -55,10 +55,7 @@ export function MainUI(props: MainUIProps) {
           <Dynamic component={toolComponents[props.selectedTool]} />
         </box>
         <Show when={props.selectedTool !== "organise"}>
-          <box
-            flexGrow={2}
-            width={isPreviewOpen() && fl.fileCount() > 0 ? "30%" : 6}
-          >
+          <box flexGrow={2} width={isPreviewOpen() && fl.fileCount() > 0 ? "30%" : 6}>
             <Show
               when={isPreviewOpen() && fl.fileCount() > 0}
               fallback={

@@ -8,7 +8,7 @@ export interface FocusableElement {
   type: "button" | "input" | "list-item" | "toggle" | "tool";
   onEnter?: () => void;
   canFocus?: () => boolean;
-};
+}
 
 export interface Status {
   msg: string;
@@ -164,9 +164,9 @@ export interface ExtractPDFInput {
 
 export interface ExtractPDFOutput {
   success: boolean;
-  outputFiles?:string[];
-  error?:string;
-  totalFiles?:number
+  outputFiles?: string[];
+  error?: string;
+  totalFiles?: number;
 }
 
 // ============ Preview PDF ============
@@ -181,7 +181,7 @@ export interface PreviewStatusMessageProps {
   color: string;
   content: string;
 }
-  
+
 export interface CachedDocument {
   doc: PreviewDocument;
   modifiedMs: number;
@@ -229,4 +229,3 @@ export interface ColumnBoundKittyPlacement extends KittyPlacementBase {
 export interface RowBoundKittyPlacement extends KittyPlacementBase {
   rows: number;
 }
-

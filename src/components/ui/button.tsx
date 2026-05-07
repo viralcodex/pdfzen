@@ -18,7 +18,7 @@ interface ButtonProps {
 export function Button(props: ButtonProps) {
   const [hovered, setHovered] = createSignal(false);
   const isHighlighted = () => !props.disabled && (props.focused || hovered());
-   
+
   const getColor = () => {
     if (props.disabled) return { bg: "#2a2a2a", border: "#444444" };
     switch (props.color) {
@@ -52,31 +52,27 @@ export function Button(props: ButtonProps) {
       marginBottom={props.marginBottom ?? 0}
     >
       <box
-      border={["bottom"]}
-      borderStyle="heavy"
-      borderColor={isHighlighted() ? "#68ffc0" : getColor().border}
-      backgroundColor={getColor().bg}
-      customBorderChars={{
-        ...EmptyBorderChars,
-        horizontal: isHighlighted() ? "▄" : "▂",
-      }}
-      height={1}
-      paddingLeft={2}
-      paddingRight={2}
-      paddingTop={props.paddingTop ?? 1}
-      paddingBottom={props.paddingBottom ?? 1}
-      width="100%"
-      justifyContent="center"
-      alignItems="center"
-      onMouseDown={props.disabled ? undefined : props.onClick}
-      onMouseOver={() => setHovered(true)}
-      onMouseOut={() => setHovered(false)}
-    >
-      <text
-        fg={getTextColor()}
-        attributes={TextAttributes.BOLD}
-        content={props.label}
-      />
+        border={["bottom"]}
+        borderStyle="heavy"
+        borderColor={isHighlighted() ? "#68ffc0" : getColor().border}
+        backgroundColor={getColor().bg}
+        customBorderChars={{
+          ...EmptyBorderChars,
+          horizontal: isHighlighted() ? "▄" : "▂",
+        }}
+        height={1}
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={props.paddingTop ?? 1}
+        paddingBottom={props.paddingBottom ?? 1}
+        width="100%"
+        justifyContent="center"
+        alignItems="center"
+        onMouseDown={props.disabled ? undefined : props.onClick}
+        onMouseOver={() => setHovered(true)}
+        onMouseOut={() => setHovered(false)}
+      >
+        <text fg={getTextColor()} attributes={TextAttributes.BOLD} content={props.label} />
       </box>
     </box>
   );

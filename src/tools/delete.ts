@@ -4,7 +4,6 @@ import { loadPdfDocument, savePdfDocument } from "../utils/utils";
 
 type DeletePagesResult = Omit<DeletePagesOutput, "outputPath">;
 
-
 export function deletePagesFromDocument(
   pdfDoc: PDFDocument,
   pagesToDelete: number[],

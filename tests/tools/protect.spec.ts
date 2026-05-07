@@ -62,9 +62,9 @@ describe("protect tool", () => {
       () => ({ asPDF: () => null }),
       () =>
         protectPDF({
-        inputPath: input,
-        outputPath: join(tempDir, "out.pdf"),
-        userPassword: "reader",
+          inputPath: input,
+          outputPath: join(tempDir, "out.pdf"),
+          userPassword: "reader",
         }),
     );
 

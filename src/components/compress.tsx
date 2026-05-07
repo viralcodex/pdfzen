@@ -81,7 +81,7 @@ export function CompressUI() {
         type: "button",
         onEnter: () => openFile(fl.files()[index]!),
       });
-      
+
       nav.registerElement({
         id: `file-${index}`,
         type: "list-item",
@@ -94,7 +94,6 @@ export function CompressUI() {
         type: "button",
         onEnter: () => fl.removeFile(index),
       });
-
     });
 
     // Register buttons

@@ -54,12 +54,7 @@ render(() => {
   });
 
   return (
-    <box
-      alignItems="center"
-      justifyContent="center"
-      flexGrow={1}
-      backgroundColor="#141414"
-    >
+    <box alignItems="center" justifyContent="center" flexGrow={1} backgroundColor="#141414">
       {selectedTool() === "" && (
         <box flexDirection="column" alignItems="center">
           <Hero />

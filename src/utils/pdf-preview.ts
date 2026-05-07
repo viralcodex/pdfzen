@@ -1,7 +1,16 @@
 import type { BoxRenderable, CliRenderer } from "@opentui/core";
 import { stat } from "fs/promises";
 import mupdf from "./mupdf";
-import type { ColumnBoundKittyPlacement, RowBoundKittyPlacement, CachedDocument, CachedPreviewImage, CellPixelSize, PDFPreviewViewport, KittyPlacementBase, PDFPreviewRenderResult } from "../model";
+import type {
+  ColumnBoundKittyPlacement,
+  RowBoundKittyPlacement,
+  CachedDocument,
+  CachedPreviewImage,
+  CellPixelSize,
+  PDFPreviewViewport,
+  KittyPlacementBase,
+  PDFPreviewRenderResult,
+} from "../model";
 
 const KITTY_CHUNK_SIZE = 4096;
 const DEFAULT_CELL_WIDTH = 10;
@@ -295,8 +304,5 @@ export const displayPDFPreview = (
 ) => {
   const placement = getKittyPlacement(viewport, imageWidth, imageHeight);
 
-  writeRendererOutput(
-    renderer,
-    buildKittyTransmitSequence(placement, png, zIndex, previousZIndex),
-  );
+  writeRendererOutput(renderer, buildKittyTransmitSequence(placement, png, zIndex, previousZIndex));
 };

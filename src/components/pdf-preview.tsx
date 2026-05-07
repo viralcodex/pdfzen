@@ -1,13 +1,6 @@
 import { TextAttributes, type BoxRenderable, type CliRenderer } from "@opentui/core";
 import { onResize, useRenderer } from "@opentui/solid";
-import {
-  Show,
-  createEffect,
-  createMemo,
-  createResource,
-  createSignal,
-  onCleanup,
-} from "solid-js";
+import { Show, createEffect, createMemo, createResource, createSignal, onCleanup } from "solid-js";
 import {
   clearPDFPreview,
   displayPDFPreview,
@@ -25,7 +18,6 @@ type RendererCapabilities = CliRenderer["capabilities"];
 const hasKittyGraphics = (capabilities: RendererCapabilities | null) =>
   Boolean(capabilities?.kitty_graphics);
 
-
 export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void }) {
   const renderer = useRenderer();
   const fl = useFileListContext();
@@ -42,9 +34,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
   const [kittySupportDetected, setKittySupportDetected] = createSignal(initialKittySupport);
   const [capabilityProbeExpired, setCapabilityProbeExpired] = createSignal(initialKittySupport);
 
-  const supported = createMemo(
-    () => kittySupportDetected() || hasKittyGraphics(capabilities()),
-  );
+  const supported = createMemo(() => kittySupportDetected() || hasKittyGraphics(capabilities()));
 
   const [pageCount] = createResource(() => selectedFile(), getPDFPreviewPageCount);
 
@@ -54,14 +44,16 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
   let latestZIndex = 0;
   let capabilityProbeTimer: ReturnType<typeof setTimeout> | null = null;
   let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
-  
+
   const totalPages = () => Math.max(pageCount() ?? 0, 1);
   const canGoPrev = () => page() > 1;
   const canGoNext = () => page() < totalPages();
-  const showSupportProbe = () => Boolean(selectedFile()) && !supported() && !capabilityProbeExpired();
+  const showSupportProbe = () =>
+    Boolean(selectedFile()) && !supported() && !capabilityProbeExpired();
   const showUnsupported = () => Boolean(selectedFile()) && !supported() && capabilityProbeExpired();
   // const showLoading = () => Boolean(selectedFile()) && supported() && isLoading();
-  const showError = () => Boolean(selectedFile()) && supported() && !isLoading() && Boolean(error());
+  const showError = () =>
+    Boolean(selectedFile()) && supported() && !isLoading() && Boolean(error());
 
   const invalidateLayout = () => {
     setLayoutVersion((value) => value + 1);
@@ -110,7 +102,8 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
   });
 
   const handleCapabilitiesChange = (nextCapabilities: unknown) => {
-    const resolvedCapabilities = (nextCapabilities as RendererCapabilities | null | undefined) ?? null;
+    const resolvedCapabilities =
+      (nextCapabilities as RendererCapabilities | null | undefined) ?? null;
 
     setCapabilities(resolvedCapabilities);
 
@@ -286,9 +279,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
           <PreviewButton
             label="▶"
             disabled={!canGoNext()}
-            onClick={() =>
-              setPage((value) => Math.min(totalPages(), value + 1))
-            }
+            onClick={() => setPage((value) => Math.min(totalPages(), value + 1))}
           />
         </box>
       </Show>

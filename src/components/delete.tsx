@@ -1,12 +1,12 @@
-import {
-  createSignal,
-  createMemo,
-  Show,
-  createEffect,
-  onCleanup,
-} from "solid-js";
+import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
 import { deletePagesFromDocument } from "../tools/delete";
-import { openFile, getOutputPath, openOutputFolder, savePdfDocument, loadPdfDocument } from "../utils/utils";
+import {
+  openFile,
+  getOutputPath,
+  openOutputFolder,
+  savePdfDocument,
+  loadPdfDocument,
+} from "../utils/utils";
 import { Button } from "./ui/button";
 import { ButtonRow } from "./ui/button-row";
 import { FileList } from "./ui/file-list";
@@ -97,7 +97,7 @@ export function DeleteUI() {
         type: "list-item",
         onEnter: () => fl.selectFile(index),
       });
-      
+
       nav.registerElement({
         id: `file-${index}-open`,
         type: "button",
@@ -196,11 +196,7 @@ export function DeleteUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text
-              fg="#3498db"
-              attributes={TextAttributes.BOLD}
-              content={fl.selectedFile() ?? ""}
-            />
+            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
             <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
           </box>
         </box>
@@ -211,9 +207,7 @@ export function DeleteUI() {
         value={pagesInput}
         onInput={setPagesInput}
         placeholder="1, 3, 5"
-        focused={
-          focusedInput() === "input-pages" || nav.isFocused("input-pages")
-        }
+        focused={focusedInput() === "input-pages" || nav.isFocused("input-pages")}
         onFocus={() => setFocusedInput("input-pages")}
       />
 
