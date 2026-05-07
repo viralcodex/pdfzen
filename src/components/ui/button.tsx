@@ -9,12 +9,16 @@ interface ButtonProps {
   onClick: () => void;
   focused?: boolean;
   width?: number | "auto" | `${number}%`;
+  marginTop?: number;
+  marginBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
 }
 
 export function Button(props: ButtonProps) {
   const [hovered, setHovered] = createSignal(false);
   const isHighlighted = () => !props.disabled && (props.focused || hovered());
-
+   
   const getColor = () => {
     if (props.disabled) return { bg: "#2a2a2a", border: "#444444" };
     switch (props.color) {
@@ -43,6 +47,11 @@ export function Button(props: ButtonProps) {
 
   return (
     <box
+      width={props.width}
+      marginTop={props.marginTop ?? 0}
+      marginBottom={props.marginBottom ?? 0}
+    >
+      <box
       border={["bottom"]}
       borderStyle="heavy"
       borderColor={isHighlighted() ? "#68ffc0" : getColor().border}
@@ -54,9 +63,9 @@ export function Button(props: ButtonProps) {
       height={1}
       paddingLeft={2}
       paddingRight={2}
-      paddingTop={1}
-      paddingBottom={1}
-      width={props.width}
+      paddingTop={props.paddingTop ?? 1}
+      paddingBottom={props.paddingBottom ?? 1}
+      width="100%"
       justifyContent="center"
       alignItems="center"
       onMouseDown={props.disabled ? undefined : props.onClick}
@@ -68,6 +77,7 @@ export function Button(props: ButtonProps) {
         attributes={TextAttributes.BOLD}
         content={props.label}
       />
+      </box>
     </box>
   );
 }

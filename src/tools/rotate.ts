@@ -1,5 +1,6 @@
-import { PDFDocument, degrees } from "pdf-lib";
+import { degrees } from "pdf-lib";
 import type { RotatePDFInput, RotatePDFOutput } from "../model/models";
+import { loadPdfDocumentWithPageCount, savePdfDocument } from "../utils/utils";
 
 /**
  * Rotates pages in a PDF file
@@ -8,9 +9,7 @@ import type { RotatePDFInput, RotatePDFOutput } from "../model/models";
  */
 export async function rotatePDF(input: RotatePDFInput): Promise<RotatePDFOutput> {
   try {
-    const pdfBytes = await Bun.file(input.inputPath).arrayBuffer();
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const totalPages = pdfDoc.getPageCount();
+    const { pdfDoc, totalPages } = await loadPdfDocumentWithPageCount(input.inputPath);
 
     // Determine which pages to rotate
     let pagesToRotate: number[];
@@ -33,8 +32,7 @@ export async function rotatePDF(input: RotatePDFInput): Promise<RotatePDFOutput>
     }
 
     // Save the rotated PDF
-    const rotatedPdfBytes = await pdfDoc.save();
-    await Bun.write(input.outputPath, rotatedPdfBytes);
+    await savePdfDocument(pdfDoc, input.outputPath);
 
     return {
       success: true,
@@ -58,9 +56,7 @@ export async function getPDFRotations(
   inputPath: string,
 ): Promise<Array<{ page: number; rotation: number }>> {
   try {
-    const pdfBytes = await Bun.file(inputPath).arrayBuffer();
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const totalPages = pdfDoc.getPageCount();
+    const { pdfDoc, totalPages } = await loadPdfDocumentWithPageCount(inputPath);
 
     const rotations = [];
     for (let i = 0; i < totalPages; i++) {

@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import type { ImagesToPDFInput, ImagesToPDFOutput } from "../model/models";
+import { savePdfDocument } from "../utils/utils";
 
 /**
  * Converts multiple images into a single PDF file using pdf-lib
@@ -68,8 +69,7 @@ export async function imagesToPDF(input: ImagesToPDFInput): Promise<ImagesToPDFO
       }
     }
 
-    const pdfBytes = await pdfDoc.save();
-    await Bun.write(input.outputPath, pdfBytes);
+    await savePdfDocument(pdfDoc, input.outputPath);
 
     return {
       success: true,
