@@ -250,10 +250,7 @@ export const getPageCount = async (filePath: string): Promise<number> => {
   }
 };
 
-export async function savePdfDocument(
-  pdfDoc: PDFDocument,
-  outputPath: string,
-): Promise<void> {
+export async function savePdfDocument(pdfDoc: PDFDocument, outputPath: string): Promise<void> {
   const modifiedPdfBytes = await pdfDoc.save();
   await Bun.write(outputPath, modifiedPdfBytes);
 }

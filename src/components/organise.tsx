@@ -79,16 +79,13 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
   const [layoutVersion, setLayoutVersion] = createSignal(0);
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
-  const [capabilities, setCapabilities] =
-    createSignal<RendererCapabilities | null>(renderer.capabilities ?? null);
-  const [kittySupportDetected, setKittySupportDetected] =
-    createSignal(initialKittySupport);
-  const [capabilityProbeExpired, setCapabilityProbeExpired] =
-    createSignal(initialKittySupport);
-
-  const supported = createMemo(
-    () => kittySupportDetected() || hasKittyGraphics(capabilities()),
+  const [capabilities, setCapabilities] = createSignal<RendererCapabilities | null>(
+    renderer.capabilities ?? null,
   );
+  const [kittySupportDetected, setKittySupportDetected] = createSignal(initialKittySupport);
+  const [capabilityProbeExpired, setCapabilityProbeExpired] = createSignal(initialKittySupport);
+
+  const supported = createMemo(() => kittySupportDetected() || hasKittyGraphics(capabilities()));
 
   let previousFrameRef: BoxRenderable | undefined;
   let currentFrameRef: BoxRenderable | undefined;
@@ -242,13 +239,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     requestVersion += 1;
     const currentRequest = requestVersion;
 
-    if (
-      !file ||
-      !previousFrameRef ||
-      !currentFrameRef ||
-      !nextFrameRef ||
-      !isSupported
-    ) {
+    if (!file || !previousFrameRef || !currentFrameRef || !nextFrameRef || !isSupported) {
       setIsLoading(false);
       setError(null);
       clearCarouselPreviews();
@@ -388,18 +379,8 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
 
   return (
     <box flexDirection="column" flexGrow={1} rowGap={1} width={`100%`}>
-      <box
-        flexDirection="row"
-        justifyContent="space-between"
-        alignItems="center"
-        width={`100%`}
-      >
-        <Button
-          label="X"
-          color="red"
-          onClick={props.onClose}
-          focused={props.closeFocused}
-        />
+      <box flexDirection="row" justifyContent="space-between" alignItems="center" width={`100%`}>
+        <Button label="X" color="red" onClick={props.onClose} focused={props.closeFocused} />
       </box>
       <box flexDirection="row" columnGap={2} flexGrow={1} minHeight={18} alignItems="stretch">
         <box flexDirection="column" flexGrow={1} rowGap={0} width={`100%`}>
@@ -513,18 +494,8 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
         </box>
       </box>
       <Show when={selectedFile()}>
-        <box
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          width={"100%"}
-        >
-          <box
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="center"
-            width={"100%"}
-          >
+        <box flexDirection="column" alignItems="center" justifyContent="center" width={"100%"}>
+          <box flexDirection="row" alignItems="center" justifyContent="center" width={"100%"}>
             <box width={"25%"} alignItems="flex-end" marginLeft={14}>
               <Button
                 label="+ Add Page(s)"
@@ -547,10 +518,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                 onClick={props.goPrev}
                 focused={props.prevFocused}
               />
-              <text
-                fg="#b9aaa0"
-                content={`Page ${currentPage()}/${totalPages()}`}
-              />
+              <text fg="#b9aaa0" content={`Page ${currentPage()}/${totalPages()}`} />
               <PreviewButton
                 label="▶"
                 disabled={!canGoNext()}
@@ -575,12 +543,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
             flexGrow={1}
             width={"100%"}
           >
-            <box
-              width={"25%"}
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="center"
-            >
+            <box width={"25%"} flexDirection="row" alignItems="center" justifyContent="center">
               <TextInput
                 label="Move page to"
                 value={props.movePageInput}
@@ -591,12 +554,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                 width={"100%"}
               />
             </box>
-            <box
-              flexDirection="column"
-              alignItems="center"
-              justifyContent="center"
-              width={"25%"}
-            >
+            <box flexDirection="column" alignItems="center" justifyContent="center" width={"25%"}>
               <box
                 flexDirection="row"
                 alignItems="center"
@@ -609,9 +567,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                   <Button
                     label="Move Page"
                     color="cyan"
-                    onClick={() =>
-                      props.movePage(Number(props.movePageInput()))
-                    }
+                    onClick={() => props.movePage(Number(props.movePageInput()))}
                     focused={props.movePageButtonFocused}
                     width={"100%"}
                   />
@@ -651,15 +607,11 @@ export function OrganiseUI() {
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
   const [currentPage, setCurrentPage] = createSignal(1);
   const [movePageInput, setMovePageInput] = createSignal("");
-  const [workingFilePath, setWorkingFilePath] = createSignal<string | null>(
-    null,
-  );
+  const [workingFilePath, setWorkingFilePath] = createSignal<string | null>(null);
   const [workingPageCount, setWorkingPageCount] = createSignal(0);
 
   const previewFile = createMemo(() => workingFilePath() ?? fl.selectedFile());
-  const totalPages = createMemo(() =>
-    workingFilePath() ? workingPageCount() : fl.pageCount(),
-  );
+  const totalPages = createMemo(() => (workingFilePath() ? workingPageCount() : fl.pageCount()));
 
   createEffect(() => {
     nav.clearElements();
@@ -1062,12 +1014,7 @@ export function OrganiseUI() {
 
   return (
     <ToolContainer paddingTop={1}>
-      <box
-        flexDirection="row"
-        justifyContent="center"
-        alignItems="center"
-        width={`100%`}
-      >
+      <box flexDirection="row" justifyContent="center" alignItems="center" width={`100%`}>
         <box flexDirection="column" alignItems="center" justifyContent="center">
           <text
             fg="#d8c7b8"

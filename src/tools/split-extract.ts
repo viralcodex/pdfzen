@@ -1,7 +1,12 @@
 import { PDFDocument } from "pdf-lib";
 import { mkdir } from "fs/promises";
 import { basename, join } from "path";
-import type { ExtractPDFInput, ExtractPDFOutput, SplitPDFInput, SplitPDFOutput } from "../model/models";
+import type {
+  ExtractPDFInput,
+  ExtractPDFOutput,
+  SplitPDFInput,
+  SplitPDFOutput,
+} from "../model/models";
 import { loadPdfDocumentWithPageCount, savePdfDocument } from "../utils/utils";
 
 /**

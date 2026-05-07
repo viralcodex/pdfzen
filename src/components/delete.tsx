@@ -1,12 +1,12 @@
-import {
-  createSignal,
-  createMemo,
-  Show,
-  createEffect,
-  onCleanup,
-} from "solid-js";
+import { createSignal, createMemo, Show, createEffect, onCleanup } from "solid-js";
 import { deletePagesFromDocument } from "../tools/delete";
-import { openFile, getOutputPath, openOutputFolder, savePdfDocument, loadPdfDocument } from "../utils/utils";
+import {
+  openFile,
+  getOutputPath,
+  openOutputFolder,
+  savePdfDocument,
+  loadPdfDocument,
+} from "../utils/utils";
 import { Button } from "./ui/button";
 import { ButtonRow } from "./ui/button-row";
 import { FileList } from "./ui/file-list";
