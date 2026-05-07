@@ -17,15 +17,17 @@ import { EmptyBorderChars } from "../constants/constants";
 import type { SplitMode, ExtractMode } from "../model";
 import { useFileListContext } from "../provider/fileListProvider";
 
-type ActionTypes = {
+type ActionTypes =
+  | {
       action: "split";
       mode: SplitMode;
       splitValue: number | number[];
-    } | {
+    }
+  | {
       action: "extract";
       mode: ExtractMode;
       splitValue: number | number[];
-  };
+    };
 
 export function SplitExtractUI() {
   const fl = useFileListContext();
@@ -39,8 +41,7 @@ export function SplitExtractUI() {
   const [extractEveryN, setExtractEveryN] = createSignal("");
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
   const terminalDimensions = useTerminalDimensions();
-  const isCompact = () =>
-    terminalDimensions().height < 30 || terminalDimensions().width < 60;
+  const isCompact = () => terminalDimensions().height < 30 || terminalDimensions().width < 60;
   const stackToolPanels = () => terminalDimensions().width < 100;
   const stackRangeInputs = () => isCompact() || stackToolPanels();
 
@@ -318,11 +319,7 @@ export function SplitExtractUI() {
         >
           <box flexDirection="row" columnGap={1}>
             <text fg="#ecf0f1" content={"Selected:"} />
-            <text
-              fg="#3498db"
-              attributes={TextAttributes.BOLD}
-              content={fl.selectedFile() ?? ""}
-            />
+            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
             <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
           </box>
         </box>
@@ -383,8 +380,7 @@ export function SplitExtractUI() {
               onInput={setSplitPagesInput}
               placeholder={fl.pageCount() > 1 ? `1-${fl.pageCount() - 1}` : "1"}
               focused={
-                focusedInput() === "split-input-splitAt" ||
-                nav.isFocused("split-input-splitAt")
+                focusedInput() === "split-input-splitAt" || nav.isFocused("split-input-splitAt")
               }
               onFocus={() => setFocusedInput("split-input-splitAt")}
             />
@@ -396,10 +392,7 @@ export function SplitExtractUI() {
               value={splitEveryN}
               onInput={setSplitEveryN}
               placeholder="2"
-              focused={
-                focusedInput() === "split-input-every" ||
-                nav.isFocused("split-input-every")
-              }
+              focused={focusedInput() === "split-input-every" || nav.isFocused("split-input-every")}
               onFocus={() => setFocusedInput("split-input-every")}
             />
           </Show>
@@ -497,8 +490,7 @@ export function SplitExtractUI() {
               onInput={setExtractEveryN}
               placeholder="2"
               focused={
-                focusedInput() === "extract-input-every" ||
-                nav.isFocused("extract-input-every")
+                focusedInput() === "extract-input-every" || nav.isFocused("extract-input-every")
               }
               onFocus={() => setFocusedInput("extract-input-every")}
             />

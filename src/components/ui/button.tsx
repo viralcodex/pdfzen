@@ -63,11 +63,7 @@ export function Button(props: ButtonProps) {
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}
     >
-      <text
-        fg={getTextColor()}
-        attributes={TextAttributes.BOLD}
-        content={props.label}
-      />
+      <text fg={getTextColor()} attributes={TextAttributes.BOLD} content={props.label} />
     </box>
   );
 }

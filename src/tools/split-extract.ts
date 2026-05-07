@@ -1,7 +1,12 @@
 import { PDFDocument } from "pdf-lib";
 import { mkdir } from "fs/promises";
 import { basename, join } from "path";
-import type { ExtractPDFInput, ExtractPDFOutput, SplitPDFInput, SplitPDFOutput } from "../model/models";
+import type {
+  ExtractPDFInput,
+  ExtractPDFOutput,
+  SplitPDFInput,
+  SplitPDFOutput,
+} from "../model/models";
 
 /**
  * Splits a PDF file into multiple files based on the specified mode
@@ -12,7 +17,7 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
   try {
     const outputFiles: string[] = [];
 
-    const {totalPages, baseName, pdfDoc} = await init(input);
+    const { totalPages, baseName, pdfDoc } = await init(input);
 
     switch (input.splitMode) {
       case "at": {
@@ -134,7 +139,7 @@ export async function extractPDF(input: ExtractPDFInput): Promise<ExtractPDFOutp
           const newPdf = await PDFDocument.create();
           const endIdx = Math.min(totalPages, i + interval);
 
-          const pageIndices = Array.from({length: endIdx - i}, (_, idx) => i + idx);
+          const pageIndices = Array.from({ length: endIdx - i }, (_, idx) => i + idx);
 
           const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
 
@@ -147,11 +152,12 @@ export async function extractPDF(input: ExtractPDFInput): Promise<ExtractPDFOutp
         }
         break;
       }
-      
+
       //Extract [i, j] range of pages from PDF
       case "range": {
-
-        const range = Array.isArray(input.extractValue) ? input.extractValue : [1, input.extractValue];
+        const range = Array.isArray(input.extractValue)
+          ? input.extractValue
+          : [1, input.extractValue];
 
         const startPage = Math.max(1, range[0] ?? 1);
         const endPage = Math.min(totalPages, range[1] ?? totalPages);
@@ -162,16 +168,19 @@ export async function extractPDF(input: ExtractPDFInput): Promise<ExtractPDFOutp
             error: `Page range must be between 1 and ${totalPages}`,
           };
         }
-        
-        const pages = Array.from({length: endPage - startPage + 1}, (_, idx) => startPage + idx - 1);
+
+        const pages = Array.from(
+          { length: endPage - startPage + 1 },
+          (_, idx) => startPage + idx - 1,
+        );
 
         const newPdf = await PDFDocument.create();
 
         const copiedPages = await newPdf.copyPages(pdfDoc, pages);
 
         copiedPages.forEach((page) => newPdf.addPage(page));
-        
-        const outputPath = join(input.outputDir, `${baseName}_pages_${startPage}-${endPage}.pdf`)
+
+        const outputPath = join(input.outputDir, `${baseName}_pages_${startPage}-${endPage}.pdf`);
 
         const newPdfBytes = await newPdf.save();
 
@@ -208,6 +217,6 @@ const init = async (input: SplitPDFInput | ExtractPDFInput) => {
   return {
     totalPages,
     baseName,
-    pdfDoc
-  }
-}
+    pdfDoc,
+  };
+};

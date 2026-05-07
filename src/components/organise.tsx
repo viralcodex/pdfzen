@@ -1,4 +1,10 @@
-import { RGBA, TextAttributes, type BoxRenderable, type CliRenderer, type KeyEvent } from "@opentui/core";
+import {
+  RGBA,
+  TextAttributes,
+  type BoxRenderable,
+  type CliRenderer,
+  type KeyEvent,
+} from "@opentui/core";
 import { onResize, useKeyboard, useRenderer } from "@opentui/solid";
 import {
   Show,
@@ -36,9 +42,7 @@ type CarouselRenderSlot = "previous" | "current" | "next";
 interface CarouselRenderTask {
   slot: CarouselRenderSlot;
   result: Awaited<ReturnType<typeof renderPDFPreviewPage>>;
-  viewport: ReturnType<typeof getPDFPreviewViewport> extends infer T
-    ? Exclude<T, null>
-    : never;
+  viewport: ReturnType<typeof getPDFPreviewViewport> extends infer T ? Exclude<T, null> : never;
 }
 
 interface OrganisePDFToolWindowProps {
@@ -72,20 +76,14 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
   const [layoutVersion, setLayoutVersion] = createSignal(0);
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
-  const [capabilities, setCapabilities] =
-    createSignal<RendererCapabilities | null>(renderer.capabilities ?? null);
-  const [kittySupportDetected, setKittySupportDetected] =
-    createSignal(initialKittySupport);
-  const [capabilityProbeExpired, setCapabilityProbeExpired] =
-    createSignal(initialKittySupport);
-  
-  const supported = createMemo(
-    () => kittySupportDetected() || hasKittyGraphics(capabilities()),
+  const [capabilities, setCapabilities] = createSignal<RendererCapabilities | null>(
+    renderer.capabilities ?? null,
   );
-  const [pageCount] = createResource(
-    () => selectedFile(),
-    getPDFPreviewPageCount,
-  );
+  const [kittySupportDetected, setKittySupportDetected] = createSignal(initialKittySupport);
+  const [capabilityProbeExpired, setCapabilityProbeExpired] = createSignal(initialKittySupport);
+
+  const supported = createMemo(() => kittySupportDetected() || hasKittyGraphics(capabilities()));
+  const [pageCount] = createResource(() => selectedFile(), getPDFPreviewPageCount);
 
   let previousFrameRef: BoxRenderable | undefined;
   let currentFrameRef: BoxRenderable | undefined;
@@ -108,10 +106,8 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
   const canGoNext = () => hasNextPage();
   const showSupportProbe = () =>
     Boolean(selectedFile()) && !supported() && !capabilityProbeExpired();
-  const showUnsupported = () =>
-    Boolean(selectedFile()) && !supported() && capabilityProbeExpired();
-  const showLoading = () =>
-    Boolean(selectedFile()) && supported() && isLoading();
+  const showUnsupported = () => Boolean(selectedFile()) && !supported() && capabilityProbeExpired();
+  const showLoading = () => Boolean(selectedFile()) && supported() && isLoading();
   const showError = () =>
     Boolean(selectedFile()) && supported() && !isLoading() && Boolean(error());
 
@@ -265,36 +261,30 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     void (async () => {
       try {
         const renders: Promise<CarouselRenderTask>[] = [
-          renderPDFPreviewPage(file, activePage, currentViewport).then(
-            (result) => ({
-              slot: "current" as const,
-              result,
-              viewport: currentViewport,
-            }),
-          ),
+          renderPDFPreviewPage(file, activePage, currentViewport).then((result) => ({
+            slot: "current" as const,
+            result,
+            viewport: currentViewport,
+          })),
         ];
 
         if (leftNeighborPage >= 1) {
           renders.push(
-            renderPDFPreviewPage(file, leftNeighborPage, previousViewport).then(
-              (result) => ({
-                slot: "previous" as const,
-                result,
-                viewport: previousViewport,
-              }),
-            ),
+            renderPDFPreviewPage(file, leftNeighborPage, previousViewport).then((result) => ({
+              slot: "previous" as const,
+              result,
+              viewport: previousViewport,
+            })),
           );
         }
 
         if (rightNeighborPage <= total) {
           renders.push(
-            renderPDFPreviewPage(file, rightNeighborPage, nextViewport).then(
-              (result) => ({
-                slot: "next" as const,
-                result,
-                viewport: nextViewport,
-              }),
-            ),
+            renderPDFPreviewPage(file, rightNeighborPage, nextViewport).then((result) => ({
+              slot: "next" as const,
+              result,
+              viewport: nextViewport,
+            })),
           );
         }
 
@@ -387,24 +377,9 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
 
   return (
     <box flexDirection="column" flexGrow={1} rowGap={1} width={`100%`}>
-      <box
-        flexDirection="row"
-        justifyContent="space-between"
-        alignItems="center"
-        width={`100%`}
-      >
-        <Button
-          label="X"
-          color="red"
-          onClick={props.onClose}
-          focused={props.closeFocused}
-        />
-        <box
-          width={"100%"}
-          flexDirection="row"
-          justifyContent="center"
-          alignItems="center"
-        >
+      <box flexDirection="row" justifyContent="space-between" alignItems="center" width={`100%`}>
+        <Button label="X" color="red" onClick={props.onClose} focused={props.closeFocused} />
+        <box width={"100%"} flexDirection="row" justifyContent="center" alignItems="center">
           <text
             fg="#d8c7b8"
             attributes={TextAttributes.BOLD}
@@ -412,19 +387,10 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
           />
         </box>
       </box>
-      <box
-        flexDirection="row"
-        columnGap={2}
-        flexGrow={1}
-        minHeight={18}
-        alignItems="stretch"
-      >
+      <box flexDirection="row" columnGap={2} flexGrow={1} minHeight={18} alignItems="stretch">
         <box flexDirection="column" flexGrow={1} rowGap={0} width={`100%`}>
           <box justifyContent="center" alignItems="center" height={1}>
-            <text
-              fg="#4f565d"
-              content={hasPreviousPage() ? `Page ${previousPage()}` : "End"}
-            />
+            <text fg="#4f565d" content={hasPreviousPage() ? `Page ${previousPage()}` : "End"} />
           </box>
           <box flexGrow={1} alignItems="center" justifyContent="center">
             <PDFPreviewFrame
@@ -447,14 +413,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
               alignItems="center"
               justifyContent="center"
             >
-              <Show
-                when={
-                  selectedFile() &&
-                  supported() &&
-                  !showError() &&
-                  hasPreviousPage()
-                }
-              >
+              <Show when={selectedFile() && supported() && !showError() && hasPreviousPage()}>
                 <box
                   position="absolute"
                   top={0}
@@ -464,14 +423,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                   backgroundColor={RGBA.fromInts(18, 18, 18, 128)}
                 />
               </Show>
-              <Show
-                when={
-                  selectedFile() &&
-                  supported() &&
-                  !showError() &&
-                  !hasPreviousPage()
-                }
-              >
+              <Show when={selectedFile() && supported() && !showError() && !hasPreviousPage()}>
                 <text fg="#5f6770" content="No previous page" />
               </Show>
             </PDFPreviewFrame>
@@ -480,11 +432,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
         <box border={["left"]} borderColor="#34495e" width={1}></box>
         <box flexDirection="column" flexGrow={6} rowGap={1} width={`100%`}>
           <box justifyContent="center" alignItems="center">
-            <text
-              fg="#d8c7b8"
-              attributes={TextAttributes.BOLD}
-              content={`Page ${currentPage()}`}
-            />
+            <text fg="#d8c7b8" attributes={TextAttributes.BOLD} content={`Page ${currentPage()}`} />
           </box>
           <PDFPreviewFrame
             setFrameRef={(value: BoxRenderable | undefined) => {
@@ -510,10 +458,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
         <box border={["left"]} borderColor="#34495e" width={1}></box>
         <box flexDirection="column" flexGrow={1} rowGap={0} width={`100%`}>
           <box justifyContent="center" alignItems="center" height={1}>
-            <text
-              fg="#4f565d"
-              content={hasNextPage() ? `Page ${nextPage()}` : "End"}
-            />
+            <text fg="#4f565d" content={hasNextPage() ? `Page ${nextPage()}` : "End"} />
           </box>
           <box flexGrow={1} alignItems="center" justifyContent="center">
             <PDFPreviewFrame
@@ -536,11 +481,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
               alignItems="center"
               justifyContent="center"
             >
-              <Show
-                when={
-                  selectedFile() && supported() && !showError() && hasNextPage()
-                }
-              >
+              <Show when={selectedFile() && supported() && !showError() && hasNextPage()}>
                 <box
                   position="absolute"
                   top={0}
@@ -550,14 +491,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                   backgroundColor={RGBA.fromInts(18, 18, 18, 128)}
                 />
               </Show>
-              <Show
-                when={
-                  selectedFile() &&
-                  supported() &&
-                  !showError() &&
-                  !hasNextPage()
-                }
-              >
+              <Show when={selectedFile() && supported() && !showError() && !hasNextPage()}>
                 <text fg="#5f6770" content="No next page" />
               </Show>
             </PDFPreviewFrame>
@@ -573,12 +507,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
           paddingTop={1}
           width={"100%"}
         >
-          <box
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="center"
-            columnGap={1}
-          >
+          <box flexDirection="row" alignItems="center" justifyContent="center" columnGap={1}>
             <PreviewButton
               label="◀"
               disabled={!canGoPrev()}
@@ -688,7 +617,7 @@ export function OrganiseUI() {
         onEnter: () => setFocusedInput("move-page-input"),
         canFocus: () => Boolean(fl.selectedFile()),
       });
-       
+
       nav.registerElement({
         id: "move-page-btn",
         type: "button",
@@ -815,9 +744,7 @@ export function OrganiseUI() {
 
   const handleMovePageInput: Setter<string> = (value) => {
     const nextValue =
-      typeof value === "function"
-        ? (value as (prev: string) => string)(movePageInput())
-        : value;
+      typeof value === "function" ? (value as (prev: string) => string)(movePageInput()) : value;
     setMovePageInput(nextValue);
 
     const parsed = Number.parseInt(nextValue, 10);
@@ -906,8 +833,7 @@ export function OrganiseUI() {
           prevFocused={nav.isFocused("organise-prev-btn")}
           nextFocused={nav.isFocused("organise-next-btn")}
           movePageInputFocused={
-            focusedInput() === "move-page-input" ||
-            nav.isFocused("move-page-input")
+            focusedInput() === "move-page-input" || nav.isFocused("move-page-input")
           }
           movePageButtonFocused={nav.isFocused("move-page-btn")}
           movePageInput={movePageInput}
@@ -918,7 +844,6 @@ export function OrganiseUI() {
           saveFocused={nav.isFocused("save-pdf-btn")}
           movePage={movePage}
           onMovePageFocus={() => setFocusedInput("move-page-input")}
-          
         />
       </Show>
       <ButtonRow>
