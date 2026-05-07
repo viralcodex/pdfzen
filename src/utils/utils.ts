@@ -243,10 +243,33 @@ export const unescapePath = (path: string): string => path.replace(/\\(.)/g, "$1
 
 export const getPageCount = async (filePath: string): Promise<number> => {
   try {
-    const pdfBytes = await Bun.file(filePath).arrayBuffer();
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    return pdfDoc.getPageCount();
+    const { totalPages } = await loadPdfDocumentWithPageCount(filePath);
+    return totalPages;
   } catch {
     return 0;
   }
 };
+
+export async function savePdfDocument(
+  pdfDoc: PDFDocument,
+  outputPath: string,
+): Promise<void> {
+  const modifiedPdfBytes = await pdfDoc.save();
+  await Bun.write(outputPath, modifiedPdfBytes);
+}
+
+export async function loadPdfDocument(inputPath: string): Promise<PDFDocument> {
+  const pdfBytes = await Bun.file(inputPath).arrayBuffer();
+  return PDFDocument.load(pdfBytes);
+}
+
+export async function loadPdfDocumentWithPageCount(
+  inputPath: string,
+): Promise<{ pdfDoc: PDFDocument; totalPages: number }> {
+  const pdfDoc = await loadPdfDocument(inputPath);
+
+  return {
+    pdfDoc,
+    totalPages: pdfDoc.getPageCount(),
+  };
+}

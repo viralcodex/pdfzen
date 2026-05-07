@@ -16,7 +16,6 @@ export function PreviewButton(props: PreviewButtonProps) {
       backgroundColor={props.disabled ? "#1a1f23" : isHighlighted() ? "#183340" : "#14242e"}
       paddingLeft={1}
       paddingRight={1}
-      paddingBottom={1}
       justifyContent="center"
       alignItems="center"
       onMouseDown={() => {

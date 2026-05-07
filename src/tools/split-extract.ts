@@ -1,12 +1,8 @@
 import { PDFDocument } from "pdf-lib";
 import { mkdir } from "fs/promises";
 import { basename, join } from "path";
-import type {
-  ExtractPDFInput,
-  ExtractPDFOutput,
-  SplitPDFInput,
-  SplitPDFOutput,
-} from "../model/models";
+import type { ExtractPDFInput, ExtractPDFOutput, SplitPDFInput, SplitPDFOutput } from "../model/models";
+import { loadPdfDocumentWithPageCount, savePdfDocument } from "../utils/utils";
 
 /**
  * Splits a PDF file into multiple files based on the specified mode
@@ -41,7 +37,7 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
             const pages = await pdf.copyPages(pdfDoc, indices);
             pages.forEach((page) => pdf.addPage(page));
             const filePath = join(input.outputDir, `${baseName}_pages_1_to_${splitPage}.pdf`);
-            await Bun.write(filePath, await pdf.save());
+            await savePdfDocument(pdf, filePath);
             return filePath;
           })(),
           // Second part: pages splitPage+1 to end
@@ -54,7 +50,7 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
               input.outputDir,
               `${baseName}_pages_${splitPage + 1}_to_${totalPages}.pdf`,
             );
-            await Bun.write(filePath, await pdf.save());
+            await savePdfDocument(pdf, filePath);
             return filePath;
           })(),
         ]);
@@ -82,8 +78,7 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
           input.outputDir,
           `${baseName}_pages_${startPage}_to_${endPage}.pdf`,
         );
-        const newPdfBytes = await newPdf.save();
-        await Bun.write(outputPath, newPdfBytes);
+        await savePdfDocument(newPdf, outputPath);
         outputFiles.push(outputPath);
         break;
       }
@@ -102,8 +97,7 @@ export async function splitPDF(input: SplitPDFInput): Promise<SplitPDFOutput> {
           copiedPages.forEach((page) => newPdf.addPage(page));
 
           const outputPath = join(input.outputDir, `${baseName}_part_${fileIndex}.pdf`);
-          const newPdfBytes = await newPdf.save();
-          await Bun.write(outputPath, newPdfBytes);
+          await savePdfDocument(newPdf, outputPath);
           outputFiles.push(outputPath);
           fileIndex++;
         }
@@ -146,8 +140,7 @@ export async function extractPDF(input: ExtractPDFInput): Promise<ExtractPDFOutp
           copiedPages.forEach((page) => newPdf.addPage(page));
 
           const outputPath = join(input.outputDir, `${baseName}_page_${i + 1}.pdf`);
-          const newPdfBytes = await newPdf.save();
-          await Bun.write(outputPath, newPdfBytes);
+          await savePdfDocument(newPdf, outputPath);
           outputFiles.push(outputPath);
         }
         break;
@@ -182,9 +175,7 @@ export async function extractPDF(input: ExtractPDFInput): Promise<ExtractPDFOutp
 
         const outputPath = join(input.outputDir, `${baseName}_pages_${startPage}-${endPage}.pdf`);
 
-        const newPdfBytes = await newPdf.save();
-
-        await Bun.write(outputPath, newPdfBytes);
+        await savePdfDocument(newPdf, outputPath);
 
         outputFiles.push(outputPath);
         break;
@@ -205,9 +196,7 @@ export async function extractPDF(input: ExtractPDFInput): Promise<ExtractPDFOutp
 }
 
 const init = async (input: SplitPDFInput | ExtractPDFInput) => {
-  const pdfBytes = await Bun.file(input.inputPath).arrayBuffer();
-  const pdfDoc = await PDFDocument.load(pdfBytes);
-  const totalPages = pdfDoc.getPageCount();
+  const { pdfDoc, totalPages } = await loadPdfDocumentWithPageCount(input.inputPath);
 
   // Ensure output directory exists
   await mkdir(input.outputDir, { recursive: true });

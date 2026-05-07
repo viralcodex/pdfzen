@@ -11,18 +11,17 @@ import {
   type Accessor,
   createEffect,
   createMemo,
-  createResource,
   createSignal,
   onCleanup,
   type Setter,
 } from "solid-js";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { useFileListContext } from "../provider/fileListProvider";
+import { deleteOrganisePage, moveOrganisePage, saveOrganisePdf } from "../tools/organise";
 import { openFile, openOutputFolder } from "../utils/utils";
 import {
   clearPDFPreview,
   displayPDFPreview,
-  getPDFPreviewPageCount,
   getPDFPreviewViewport,
   renderPDFPreviewPage,
 } from "../utils/pdf-preview";
@@ -48,6 +47,8 @@ interface CarouselRenderTask {
 interface OrganisePDFToolWindowProps {
   onClose: () => void;
   closeFocused: boolean;
+  previewFile: Accessor<string | null>;
+  totalPages: Accessor<number>;
   currentPage: Accessor<number>;
   goPrev: () => void;
   goNext: () => void;
@@ -62,7 +63,10 @@ interface OrganisePDFToolWindowProps {
   deleteFocused: boolean;
   savePdf: () => void;
   saveFocused: boolean;
-  movePage: () => void;
+  movePage: (destIndex: number) => void;
+  addPages: (index: number) => void;
+  addFocusedLeft: boolean;
+  addFocusedRight: boolean;
 }
 
 const hasKittyGraphics = (capabilities: RendererCapabilities | null) =>
@@ -70,20 +74,21 @@ const hasKittyGraphics = (capabilities: RendererCapabilities | null) =>
 
 function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
   const renderer = useRenderer();
-  const fl = useFileListContext();
-  const selectedFile = fl.selectedFile;
+  const selectedFile = props.previewFile;
   const initialKittySupport = hasKittyGraphics(renderer.capabilities ?? null);
   const [layoutVersion, setLayoutVersion] = createSignal(0);
   const [isLoading, setIsLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
-  const [capabilities, setCapabilities] = createSignal<RendererCapabilities | null>(
-    renderer.capabilities ?? null,
-  );
-  const [kittySupportDetected, setKittySupportDetected] = createSignal(initialKittySupport);
-  const [capabilityProbeExpired, setCapabilityProbeExpired] = createSignal(initialKittySupport);
+  const [capabilities, setCapabilities] =
+    createSignal<RendererCapabilities | null>(renderer.capabilities ?? null);
+  const [kittySupportDetected, setKittySupportDetected] =
+    createSignal(initialKittySupport);
+  const [capabilityProbeExpired, setCapabilityProbeExpired] =
+    createSignal(initialKittySupport);
 
-  const supported = createMemo(() => kittySupportDetected() || hasKittyGraphics(capabilities()));
-  const [pageCount] = createResource(() => selectedFile(), getPDFPreviewPageCount);
+  const supported = createMemo(
+    () => kittySupportDetected() || hasKittyGraphics(capabilities()),
+  );
 
   let previousFrameRef: BoxRenderable | undefined;
   let currentFrameRef: BoxRenderable | undefined;
@@ -96,7 +101,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
   let capabilityProbeTimer: ReturnType<typeof setTimeout> | null = null;
   let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const totalPages = () => pageCount() ?? 0;
+  const totalPages = props.totalPages;
   const currentPage = props.currentPage;
   const previousPage = () => currentPage() - 1;
   const nextPage = () => currentPage() + 1;
@@ -237,7 +242,13 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     requestVersion += 1;
     const currentRequest = requestVersion;
 
-    if (!file || !previousFrameRef || !currentFrameRef || !nextFrameRef || !isSupported) {
+    if (
+      !file ||
+      !previousFrameRef ||
+      !currentFrameRef ||
+      !nextFrameRef ||
+      !isSupported
+    ) {
       setIsLoading(false);
       setError(null);
       clearCarouselPreviews();
@@ -377,15 +388,18 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
 
   return (
     <box flexDirection="column" flexGrow={1} rowGap={1} width={`100%`}>
-      <box flexDirection="row" justifyContent="space-between" alignItems="center" width={`100%`}>
-        <Button label="X" color="red" onClick={props.onClose} focused={props.closeFocused} />
-        <box width={"100%"} flexDirection="row" justifyContent="center" alignItems="center">
-          <text
-            fg="#d8c7b8"
-            attributes={TextAttributes.BOLD}
-            content="Reorder, Delete or Insert Pages in a PDF"
-          />
-        </box>
+      <box
+        flexDirection="row"
+        justifyContent="space-between"
+        alignItems="center"
+        width={`100%`}
+      >
+        <Button
+          label="X"
+          color="red"
+          onClick={props.onClose}
+          focused={props.closeFocused}
+        />
       </box>
       <box flexDirection="row" columnGap={2} flexGrow={1} minHeight={18} alignItems="stretch">
         <box flexDirection="column" flexGrow={1} rowGap={0} width={`100%`}>
@@ -430,7 +444,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
           </box>
         </box>
         <box border={["left"]} borderColor="#34495e" width={1}></box>
-        <box flexDirection="column" flexGrow={6} rowGap={1} width={`100%`}>
+        <box flexDirection="column" flexGrow={6} rowGap={1} width={`200%`}>
           <box justifyContent="center" alignItems="center">
             <text fg="#d8c7b8" attributes={TextAttributes.BOLD} content={`Page ${currentPage()}`} />
           </box>
@@ -503,40 +517,70 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
           flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          columnGap={1}
-          paddingTop={1}
           width={"100%"}
         >
-          <box flexDirection="row" alignItems="center" justifyContent="center" columnGap={1}>
-            <PreviewButton
-              label="◀"
-              disabled={!canGoPrev()}
-              onClick={props.goPrev}
-              focused={props.prevFocused}
-            />
-            <box paddingBottom={1}>
-              <text
-                fg="#b9aaa0"
-                content={`Page ${currentPage()}/${pageCount.loading ? "..." : totalPages()}`}
+          <box
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
+            width={"100%"}
+          >
+            <box width={"25%"} alignItems="flex-end" marginLeft={14}>
+              <Button
+                label="+ Add Page(s)"
+                color="green"
+                onClick={() => props.addPages(previousPage())}
+                width={"50%"}
+                focused={props.addFocusedLeft}
               />
             </box>
-            <PreviewButton
-              label="▶"
-              disabled={!canGoNext()}
-              onClick={props.goNext}
-              focused={props.nextFocused}
-            />
+            <box
+              width={"45%"}
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+              columnGap={1}
+            >
+              <PreviewButton
+                label="◀"
+                disabled={!canGoPrev()}
+                onClick={props.goPrev}
+                focused={props.prevFocused}
+              />
+              <text
+                fg="#b9aaa0"
+                content={`Page ${currentPage()}/${totalPages()}`}
+              />
+              <PreviewButton
+                label="▶"
+                disabled={!canGoNext()}
+                onClick={props.goNext}
+                focused={props.nextFocused}
+              />
+            </box>
+            <box width={"25%"} alignItems="flex-start" marginRight={14}>
+              <Button
+                label="+ Add Page(s)"
+                color="green"
+                onClick={() => props.addPages(nextPage())}
+                width={"50%"}
+                focused={props.addFocusedRight}
+              />
+            </box>
           </box>
           <box
             flexDirection="column"
             alignItems="center"
             justifyContent="center"
-            columnGap={1}
             flexGrow={1}
-            flexShrink={0}
             width={"100%"}
           >
-            <box flexDirection="column" alignItems="stretch" width={"20%"}>
+            <box
+              width={"25%"}
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+            >
               <TextInput
                 label="Move page to"
                 value={props.movePageInput}
@@ -546,31 +590,50 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                 marginBottom={1}
                 width={"100%"}
               />
-              <Button
-                label="Move Page"
-                color="cyan"
-                onClick={props.movePage}
-                focused={props.movePageButtonFocused}
+            </box>
+            <box
+              flexDirection="column"
+              alignItems="center"
+              justifyContent="center"
+              width={"25%"}
+            >
+              <box
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="center"
                 width={"100%"}
+                columnGap={1}
+                marginTop={1}
+              >
+                <box flexGrow={1} alignItems="stretch">
+                  <Button
+                    label="Move Page"
+                    color="cyan"
+                    onClick={() =>
+                      props.movePage(Number(props.movePageInput()))
+                    }
+                    focused={props.movePageButtonFocused}
+                    width={"100%"}
+                  />
+                </box>
+                <box flexGrow={1} alignItems="stretch">
+                  <Button
+                    label="Delete Page"
+                    color="red"
+                    onClick={props.deletePage}
+                    focused={props.deleteFocused}
+                    width={"100%"}
+                  />
+                </box>
+              </box>
+              <Button
+                label="Save PDF"
+                color="green"
+                onClick={props.savePdf}
+                focused={props.saveFocused}
+                width={"100%"}
+                marginTop={1}
               />
-              <box marginTop={1}>
-                <Button
-                  label="Delete Page"
-                  color="red"
-                  onClick={props.deletePage}
-                  focused={props.deleteFocused}
-                  width={"100%"}
-                />
-              </box>
-              <box marginTop={1}>
-                <Button
-                  label="Save PDF"
-                  color="green"
-                  onClick={props.savePdf}
-                  focused={props.saveFocused}
-                  width={"100%"}
-                />
-              </box>
             </box>
           </box>
         </box>
@@ -588,6 +651,15 @@ export function OrganiseUI() {
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
   const [currentPage, setCurrentPage] = createSignal(1);
   const [movePageInput, setMovePageInput] = createSignal("");
+  const [workingFilePath, setWorkingFilePath] = createSignal<string | null>(
+    null,
+  );
+  const [workingPageCount, setWorkingPageCount] = createSignal(0);
+
+  const previewFile = createMemo(() => workingFilePath() ?? fl.selectedFile());
+  const totalPages = createMemo(() =>
+    workingFilePath() ? workingPageCount() : fl.pageCount(),
+  );
 
   createEffect(() => {
     nav.clearElements();
@@ -597,6 +669,20 @@ export function OrganiseUI() {
         id: "close-organise-btn",
         type: "button",
         onEnter: closeToolWindow,
+      });
+
+      nav.registerElement({
+        id: "add-page-btn-left",
+        type: "button",
+        onEnter: () => {},
+        canFocus: () => Boolean(fl.selectedFile()),
+      });
+
+      nav.registerElement({
+        id: "add-page-btn-right",
+        type: "button",
+        onEnter: () => {},
+        canFocus: () => Boolean(fl.selectedFile()),
       });
 
       nav.registerElement({
@@ -621,7 +707,7 @@ export function OrganiseUI() {
       nav.registerElement({
         id: "move-page-btn",
         type: "button",
-        onEnter: movePage,
+        onEnter: () => movePage(Number(movePageInput())),
         canFocus: () => Boolean(fl.selectedFile()),
       });
 
@@ -710,6 +796,9 @@ export function OrganiseUI() {
   createEffect(() => {
     const selected = fl.selectedFile();
 
+    setWorkingFilePath(null);
+    setWorkingPageCount(0);
+
     if (!selected) {
       setCurrentPage(1);
       setMovePageInput("");
@@ -724,7 +813,7 @@ export function OrganiseUI() {
   });
 
   createEffect(() => {
-    const total = Math.max(fl.pageCount(), 1);
+    const total = Math.max(totalPages(), 1);
     const clampedPage = Math.min(Math.max(currentPage(), 1), total);
 
     if (clampedPage !== currentPage()) {
@@ -742,42 +831,219 @@ export function OrganiseUI() {
 
   const activePage = currentPage;
 
-  const handleMovePageInput: Setter<string> = (value) => {
-    const nextValue =
-      typeof value === "function" ? (value as (prev: string) => string)(movePageInput()) : value;
-    setMovePageInput(nextValue);
-
-    const parsed = Number.parseInt(nextValue, 10);
-
-    if (!Number.isNaN(parsed)) {
-      const clamped = Math.min(Math.max(parsed, 1), Math.max(fl.pageCount(), 1));
-      setCurrentPage(clamped);
-    }
-
-    return nextValue;
-  };
-
   const goPrev = () => {
     if (activePage() <= 1) {
+      nav.focusById("organise-next-btn");
       return;
     }
 
     const nextPage = activePage() - 1;
     setCurrentPage(nextPage);
+
+    if (nextPage <= 1) {
+      nav.focusById("organise-next-btn");
+      return;
+    }
+    nav.focusById("organise-prev-btn");
   };
 
   const goNext = () => {
-    if (activePage() >= fl.pageCount()) {
+    if (activePage() >= totalPages()) {
+      nav.focusById("organise-prev-btn");
       return;
     }
 
     const nextPage = activePage() + 1;
     setCurrentPage(nextPage);
+
+    if (nextPage >= totalPages()) {
+      nav.focusById("organise-prev-btn");
+      return;
+    }
+    nav.focusById("organise-next-btn");
   };
 
-  const savePdf = () => {};
-  const deletePage = () => {};
-  const movePage = () => {};
+  const savePdf = async () => {
+    const file = previewFile();
+
+    if (!file || fl.isProcessing()) {
+      return;
+    }
+
+    fl.setIsProcessing(true);
+    fl.setStatus({ msg: "Saving PDF...", type: "info" });
+
+    try {
+      const result = await saveOrganisePdf({
+        inputPath: file,
+        originalInputPath: fl.selectedFile(),
+        workingFilePath: workingFilePath(),
+      });
+
+      if (!result.success || !result.outputPath) {
+        fl.setStatus({
+          msg: result.error || "Failed to save PDF",
+          type: "error",
+        });
+        return;
+      }
+
+      fl.setStatus({ msg: "PDF saved successfully", type: "success" });
+      await openFile(result.outputPath);
+    } catch (error) {
+      fl.setStatus({
+        msg: error instanceof Error ? error.message : "Unable to save PDF",
+        type: "error",
+      });
+    } finally {
+      fl.setIsProcessing(false);
+    }
+  };
+  const deletePage = async () => {
+    const file = previewFile();
+
+    if (!file || fl.isProcessing()) {
+      return;
+    }
+
+    if (totalPages() <= 1) {
+      fl.setStatus({ msg: "Cannot delete the last page", type: "error" });
+      return;
+    }
+
+    const pageToDelete = currentPage();
+
+    fl.setIsProcessing(true);
+    fl.setStatus({ msg: `Deleting page ${pageToDelete}...`, type: "info" });
+
+    try {
+      const result = await deleteOrganisePage({
+        inputPath: file,
+        originalInputPath: fl.selectedFile(),
+        workingFilePath: workingFilePath(),
+        pageToDelete,
+        totalPages: totalPages(),
+      });
+
+      if (!result.success) {
+        fl.setStatus({
+          msg: result.error || "Unable to delete page",
+          type: "error",
+        });
+        return;
+      }
+
+      setWorkingFilePath(result.draftPath ?? null);
+
+      const nextTotalPages = result.remainingPages ?? Math.max(totalPages() - 1, 1);
+      setWorkingPageCount(nextTotalPages);
+
+      const nextPage = result.nextPage ?? Math.min(pageToDelete, nextTotalPages);
+      setCurrentPage(nextPage);
+
+      // if (focusedInput() !== "move-page-input") {
+      //   setMovePageInput(String(nextPage));
+      // }
+
+      fl.setStatus({
+        msg: `Deleted page ${pageToDelete}. ${nextTotalPages} page(s) remaining`,
+        type: "success",
+      });
+    } catch (error) {
+      fl.setStatus({
+        msg: error instanceof Error ? error.message : "Unable to delete page",
+        type: "error",
+      });
+    } finally {
+      fl.setIsProcessing(false);
+    }
+  };
+
+  const movePage = async (destIndex: number) => {
+    const file = previewFile();
+
+    if (!file || fl.isProcessing()) {
+      return;
+    }
+
+    if (!Number.isInteger(destIndex) || destIndex < 1 || destIndex > totalPages()) {
+      fl.setStatus({ msg: "Invalid destination page index", type: "error" });
+      return;
+    }
+
+    const sourceIndex = currentPage();
+
+    if (sourceIndex === destIndex) {
+      fl.setStatus({
+        msg: "Choose a different destination page",
+        type: "error",
+      });
+      return;
+    }
+
+    fl.setIsProcessing(true);
+    fl.setStatus({
+      msg: `Moving page ${sourceIndex} to ${destIndex}...`,
+      type: "info",
+    });
+
+    try {
+      const result = await moveOrganisePage({
+        inputPath: file,
+        originalInputPath: fl.selectedFile(),
+        workingFilePath: workingFilePath(),
+        sourceIndex,
+        destIndex,
+        totalPages: totalPages(),
+      });
+
+      if (!result.success) {
+        fl.setStatus({
+          msg: result.error || "Unable to move page",
+          type: "error",
+        });
+        return;
+      }
+
+      setWorkingFilePath(result.draftPath ?? null);
+
+      const nextTotalPages = result.totalPages ?? totalPages();
+      setWorkingPageCount(nextTotalPages);
+
+      const nextPage = result.currentPage ?? destIndex;
+      setCurrentPage(nextPage);
+      setMovePageInput(String(nextPage));
+
+      fl.setStatus({
+        msg: `Moved page ${result.sourceIndex ?? sourceIndex} to ${result.destIndex ?? destIndex}`,
+        type: "success",
+      });
+    } catch (error) {
+      fl.setStatus({
+        msg: error instanceof Error ? error.message : "Unable to move page",
+        type: "error",
+      });
+    } finally {
+      fl.setIsProcessing(false);
+    }
+  };
+
+  const addPages = (index: number) => {
+    fl.setStatus({
+      msg: `Add Page at position ${index} is not wired yet`,
+      type: "info",
+    });
+    const file = previewFile();
+
+    if (!file || fl.isProcessing()) {
+      return;
+    }
+
+    if (totalPages() <= 1) {
+      fl.setStatus({ msg: "Cannot delete the last page", type: "error" });
+      return;
+    }
+  };
 
   useKeyboard((event: KeyEvent) => {
     if (!isToolWindowOpen() || nav.isInputMode() || !fl.selectedFile()) {
@@ -796,6 +1062,27 @@ export function OrganiseUI() {
 
   return (
     <ToolContainer paddingTop={1}>
+      <box
+        flexDirection="row"
+        justifyContent="center"
+        alignItems="center"
+        width={`100%`}
+      >
+        <box flexDirection="column" alignItems="center" justifyContent="center">
+          <text
+            fg="#d8c7b8"
+            attributes={TextAttributes.BOLD}
+            content="Reorder, Delete or Insert Pages in a PDF"
+          />
+          <Show when={!isToolWindowOpen()}>
+            <text
+              fg="#d8c7b8"
+              attributes={TextAttributes.BOLD}
+              content="(double click/enter on a file to open the tool)"
+            />
+          </Show>
+        </box>
+      </box>
       <Show when={!isToolWindowOpen()}>
         <Label text={"Files"} count={fl.fileCount()} />
       </Show>
@@ -827,6 +1114,8 @@ export function OrganiseUI() {
         <OrganisePDFToolWindow
           onClose={closeToolWindow}
           closeFocused={nav.isFocused("close-organise-btn")}
+          previewFile={previewFile}
+          totalPages={totalPages}
           currentPage={currentPage}
           goPrev={goPrev}
           goNext={goNext}
@@ -837,13 +1126,16 @@ export function OrganiseUI() {
           }
           movePageButtonFocused={nav.isFocused("move-page-btn")}
           movePageInput={movePageInput}
-          onMovePageInput={handleMovePageInput}
+          onMovePageInput={setMovePageInput}
           deletePage={deletePage}
           deleteFocused={nav.isFocused("delete-page-btn")}
           savePdf={savePdf}
           saveFocused={nav.isFocused("save-pdf-btn")}
           movePage={movePage}
           onMovePageFocus={() => setFocusedInput("move-page-input")}
+          addPages={addPages}
+          addFocusedLeft={nav.isFocused("add-page-btn-left")}
+          addFocusedRight={nav.isFocused("add-page-btn-right")}
         />
       </Show>
       <ButtonRow>
