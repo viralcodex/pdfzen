@@ -5,8 +5,8 @@ import {
   createEffect,
   onCleanup,
 } from "solid-js";
-import { deletePages } from "../tools/delete";
-import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
+import { deletePagesFromDocument } from "../tools/delete";
+import { openFile, getOutputPath, openOutputFolder, savePdfDocument, loadPdfDocument } from "../utils/utils";
 import { Button } from "./ui/button";
 import { ButtonRow } from "./ui/button-row";
 import { FileList } from "./ui/file-list";
@@ -63,13 +63,11 @@ export function DeleteUI() {
 
     try {
       const outputPath = await getOutputPath("deleted", file);
-      const res = await deletePages({
-        inputPath: file,
-        outputPath,
-        pagesToDelete: pages,
-      });
+      const pdfDoc = await loadPdfDocument(file);
+      const res = deletePagesFromDocument(pdfDoc, pages);
 
       if (res.success) {
+        await savePdfDocument(pdfDoc, outputPath);
         fl.setStatus({
           msg: `Deleted ${res.deletedPages} page(s), ${res.remainingPages} remaining`,
           type: "success",

@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import type { MergePDFsInput, MergePDFsOutput } from "../model/models";
+import { loadPdfDocument, savePdfDocument } from "../utils/utils";
 
 /**
  * Merges multiple PDF files into a single PDF
@@ -21,8 +22,7 @@ export async function mergePDFs(input: MergePDFsInput): Promise<MergePDFsOutput>
 
     // Load and copy pages from each PDF
     for (const pdfPath of input.inputPaths) {
-      const pdfBytes = await Bun.file(pdfPath).arrayBuffer();
-      const pdf = await PDFDocument.load(pdfBytes);
+      const pdf = await loadPdfDocument(pdfPath);
       const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
 
       copiedPages.forEach((page) => {
@@ -32,8 +32,7 @@ export async function mergePDFs(input: MergePDFsInput): Promise<MergePDFsOutput>
     }
 
     // Save the merged PDF
-    const mergedPdfBytes = await mergedPdf.save();
-    await Bun.write(input.outputPath, mergedPdfBytes);
+    await savePdfDocument(mergedPdf, input.outputPath);
 
     return {
       success: true,
