@@ -14,10 +14,10 @@
     "format": "oxfmt --write ."
   },
   "dependencies": {
-    "@opentui/core": "^0.1.74",
-    "@opentui/solid": "^0.1.74",
-    "mupdf": "^1.27.0",
-    "pdf-lib": "^1.17.1",
+    "@opentui/core": "0.2.0",
+    "@opentui/solid": "0.2.0",
+    "mupdf": "1.27.0",
+    "pdf-lib": "1.17.1",
     "solid-js": "1.9.9"
   },
   "devDependencies": {
