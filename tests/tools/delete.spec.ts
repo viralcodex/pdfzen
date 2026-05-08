@@ -73,13 +73,13 @@ describe("delete tool", () => {
   });
 
   it("returns page count for valid PDFs", async () => {
-    const { getPDFPageCount } = await import("../../src/tools/delete");
+    const { getPageCount } = await import("../../src/utils/utils");
     tempDir = await createTempDir("tuidf-delete-count-");
 
     const input = join(tempDir, "input.pdf");
     await createPdf(input, 4);
 
-    expect(await getPDFPageCount(input)).toBe(4);
+    expect(await getPageCount(input)).toBe(4);
   });
 
   it("deletes multiple pages in descending-safe order", async () => {
