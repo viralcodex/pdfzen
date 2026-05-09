@@ -109,11 +109,11 @@ export function FileList(props: FileListProps) {
                 props.focusedButton?.() === `file-${index}-open` || openHovered();
 
               const isUpHighlighted = () =>
-                canMoveUp() &&
-                (props.focusedButton?.() === `file-${index}-up` || upHovered());
+                canMoveUp() && (props.focusedButton?.() === `file-${index}-up` || upHovered());
 
               const isDownHighlighted = () =>
-                canMoveDown() && (props.focusedButton?.() === `file-${index}-down` || downHovered());
+                canMoveDown() &&
+                (props.focusedButton?.() === `file-${index}-down` || downHovered());
 
               const isRemoveHighlighted = () =>
                 props.focusedButton?.() === `file-${index}-remove` || removeHovered();
@@ -125,11 +125,7 @@ export function FileList(props: FileListProps) {
                   padding={1}
                   marginBottom={1}
                   backgroundColor={
-                    isRowHighlighted()
-                      ? "#203949"
-                      : isRowSelected()
-                        ? "#1a342e"
-                        : "#333333"
+                    isRowHighlighted() ? "#203949" : isRowSelected() ? "#1a342e" : "#333333"
                   }
                   onMouseDown={() => {
                     props.onFocusIndex?.(index);
@@ -141,11 +137,7 @@ export function FileList(props: FileListProps) {
                   width="100%"
                   border={["left"]}
                   borderColor={
-                    isRowHighlighted()
-                      ? "#8fd3ff"
-                      : isRowSelected()
-                        ? "#68ffc0"
-                        : "#4b5563"
+                    isRowHighlighted() ? "#8fd3ff" : isRowSelected() ? "#68ffc0" : "#4b5563"
                   }
                   customBorderChars={{
                     ...EmptyBorderChars,
@@ -153,47 +145,22 @@ export function FileList(props: FileListProps) {
                   }}
                 >
                   <text
-                    fg={
-                      isRowHighlighted()
-                        ? "#8fd3ff"
-                        : isSelected()
-                          ? "#68ffc0"
-                          : "yellow"
-                    }
+                    fg={isRowHighlighted() ? "#8fd3ff" : isSelected() ? "#68ffc0" : "yellow"}
                     minWidth={3}
                     content={`${index + 1}.`}
                   />
-                  <box
-                    flexDirection="column"
-                    flexGrow={1}
-                    flexShrink={1}
-                    minWidth={0}
-                  >
+                  <box flexDirection="column" flexGrow={1} flexShrink={1} minWidth={0}>
                     <text
-                      fg={
-                        isRowHighlighted()
-                          ? "#ffffff"
-                          : isRowSelected()
-                            ? "#d8fff1"
-                            : "#ecf0f1"
-                      }
+                      fg={isRowHighlighted() ? "#ffffff" : isRowSelected() ? "#d8fff1" : "#ecf0f1"}
                       flexGrow={1}
                       flexShrink={1}
                       content={file()}
                       attributes={
-                        isRowHighlighted() || isRowSelected()
-                          ? TextAttributes.BOLD
-                          : undefined
+                        isRowHighlighted() || isRowSelected() ? TextAttributes.BOLD : undefined
                       }
                     />
                     <text
-                      fg={
-                        isRowHighlighted()
-                          ? "#b6dff5"
-                          : isRowSelected()
-                            ? "#9ed9bc"
-                            : "#7f8c8d"
-                      }
+                      fg={isRowHighlighted() ? "#b6dff5" : isRowSelected() ? "#9ed9bc" : "#7f8c8d"}
                       flexGrow={1}
                       flexShrink={1}
                       content={metadataText()}
@@ -233,11 +200,7 @@ export function FileList(props: FileListProps) {
                       <box
                         border={["bottom"]}
                         borderColor={
-                          isUpHighlighted()
-                            ? "#68ffc0"
-                            : canMoveUp()
-                              ? "#3498db"
-                              : "#34495e"
+                          isUpHighlighted() ? "#68ffc0" : canMoveUp() ? "#3498db" : "#34495e"
                         }
                         backgroundColor={isUpHighlighted() ? "#1a4a3a" : "#2c3e50"}
                         customBorderChars={{
@@ -260,13 +223,7 @@ export function FileList(props: FileListProps) {
                         alignItems="center"
                       >
                         <text
-                          fg={
-                            isUpHighlighted()
-                              ? "#68ffc0"
-                              : canMoveUp()
-                                ? "#3498db"
-                                : "#7f8c8d"
-                          }
+                          fg={isUpHighlighted() ? "#68ffc0" : canMoveUp() ? "#3498db" : "#7f8c8d"}
                           attributes={isUpHighlighted() ? TextAttributes.BOLD : undefined}
                           content={"↑"}
                         />
@@ -274,11 +231,7 @@ export function FileList(props: FileListProps) {
                       <box
                         border={["bottom"]}
                         borderColor={
-                          isDownHighlighted()
-                            ? "#68ffc0"
-                            : canMoveDown()
-                              ? "#3498db"
-                              : "#34495e"
+                          isDownHighlighted() ? "#68ffc0" : canMoveDown() ? "#3498db" : "#34495e"
                         }
                         backgroundColor={isDownHighlighted() ? "#1a4a3a" : "#2c3e50"}
                         customBorderChars={{
@@ -302,11 +255,7 @@ export function FileList(props: FileListProps) {
                       >
                         <text
                           fg={
-                            isDownHighlighted()
-                              ? "#68ffc0"
-                              : canMoveDown()
-                                ? "#3498db"
-                                : "#7f8c8d"
+                            isDownHighlighted() ? "#68ffc0" : canMoveDown() ? "#3498db" : "#7f8c8d"
                           }
                           attributes={isDownHighlighted() ? TextAttributes.BOLD : undefined}
                           content={"↓"}

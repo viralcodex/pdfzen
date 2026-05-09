@@ -52,8 +52,8 @@ export async function withMockedOpenDocument<T>(
   const { default: mupdf } = await import("../../src/utils/mupdf");
   const originalOpenDocument = mupdf.Document.openDocument;
 
-  (mupdf.Document as unknown as { openDocument: typeof originalOpenDocument }).openDocument =
-    ((() => factory()) as unknown) as typeof originalOpenDocument;
+  (mupdf.Document as unknown as { openDocument: typeof originalOpenDocument }).openDocument = (() =>
+    factory()) as unknown as typeof originalOpenDocument;
 
   try {
     return await run();

@@ -34,7 +34,7 @@ describe("ui component wiring", () => {
 
     for (const componentPath of componentPaths) {
       const code = await Bun.file(new URL(componentPath, import.meta.url)).text();
-      expect(code.includes('id: `file-${index}-open`')).toBe(true);
+      expect(code.includes("id: `file-${index}-open`")).toBe(true);
     }
   });
 });

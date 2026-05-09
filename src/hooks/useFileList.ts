@@ -1,9 +1,18 @@
 import { createSignal, createMemo } from "solid-js";
+import { decodePasteBytes, stripAnsiSequences } from "@opentui/core";
 import { usePaste } from "@opentui/solid";
 import { unescapePath, validatePdfFile, validateImageFile, getPageCount } from "../utils/utils";
 import type { Status, FileListOptions } from "../model/models";
 
 const READY_STATUS: Status = { msg: "Ready", type: "info" };
+const PASTE_NUL_SEPARATOR = String.fromCharCode(0);
+
+const getPastedPaths = (bytes: Uint8Array) =>
+  stripAnsiSequences(decodePasteBytes(bytes))
+    .replaceAll(PASTE_NUL_SEPARATOR, "\n")
+    .split(/\r?\n/g)
+    .map((path) => path.trim())
+    .filter(Boolean);
 
 export function useFileList(options: FileListOptions = {}) {
   const { trackPageCount = false, acceptImages = false } = options;
@@ -193,7 +202,7 @@ export function useFileList(options: FileListOptions = {}) {
 
   //main hook to drag and drop files into the app
   usePaste(async (event) => {
-    await addFileToList(event.text, true);
+    await addFilesToList(getPastedPaths(event.bytes), true);
   });
 
   return {

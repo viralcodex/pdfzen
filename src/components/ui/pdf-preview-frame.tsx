@@ -31,8 +31,24 @@ interface PDFPreviewFrameProps {
   flexGrow?: number;
   width?: BoxDimension;
   height?: BoxDimension;
-  alignItems?: "auto" | "flex-start" | "center" | "flex-end" | "stretch" | "baseline" | "space-between" | "space-around" | "space-evenly" | undefined;
-  justifyContent?: "flex-start" | "flex-end" | "center" | "space-between" | "space-around" | "space-evenly";
+  alignItems?:
+    | "auto"
+    | "flex-start"
+    | "center"
+    | "flex-end"
+    | "stretch"
+    | "baseline"
+    | "space-between"
+    | "space-around"
+    | "space-evenly"
+    | undefined;
+  justifyContent?:
+    | "flex-start"
+    | "flex-end"
+    | "center"
+    | "space-between"
+    | "space-around"
+    | "space-evenly";
   customBorderChars?: Partial<typeof EmptyBorderChars>;
   children?: JSX.Element;
 }
@@ -60,12 +76,16 @@ export function PDFPreviewFrame(props: PDFPreviewFrameProps) {
         props.onLayoutChange();
       }}
       border={showBorder ? true : undefined}
-      customBorderChars={showBorder ? { ...defaultBorderChars, ...props.customBorderChars } : undefined}
-      borderColor={showBorder
-        ? (props.supported
+      customBorderChars={
+        showBorder ? { ...defaultBorderChars, ...props.customBorderChars } : undefined
+      }
+      borderColor={
+        showBorder
+          ? props.supported
             ? (props.supportedBorderColor ?? "#7c6559")
-            : (props.unsupportedBorderColor ?? "#4d443f"))
-        : undefined}
+            : (props.unsupportedBorderColor ?? "#4d443f")
+          : undefined
+      }
       backgroundColor={props.backgroundColor}
       flexGrow={props.flexGrow ?? 1}
       width={props.width}
@@ -94,7 +114,9 @@ export function PDFPreviewFrame(props: PDFPreviewFrameProps) {
       <Show when={props.showUnsupported}>
         <PreviewStatusMessage
           color="#8c7f78"
-          content={props.unsupportedMessage ?? "Inline preview currently requires Kitty graphics support."}
+          content={
+            props.unsupportedMessage ?? "Inline preview currently requires Kitty graphics support."
+          }
         />
       </Show>
 

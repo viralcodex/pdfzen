@@ -52,8 +52,8 @@ describe("compress tool", () => {
       () => ({ asPDF: () => null }),
       () =>
         compressPDF({
-        inputPath: input,
-        outputPath: join(tempDir, "out.pdf"),
+          inputPath: input,
+          outputPath: join(tempDir, "out.pdf"),
         }),
     );
 
