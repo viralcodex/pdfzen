@@ -17,8 +17,13 @@ import {
 } from "solid-js";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
 import { useFileListContext } from "../provider/fileListProvider";
-import { deleteOrganisePage, moveOrganisePage, saveOrganisePdf } from "../tools/organise";
-import { openFile, openOutputFolder } from "../utils/utils";
+import {
+  addPagesToPdf,
+  deleteOrganisePage,
+  moveOrganisePage,
+  saveOrganisePdf,
+} from "../tools/organise";
+import { deleteFileIfExists, openFile, openOutputFolder } from "../utils/utils";
 import {
   clearPDFPreview,
   displayPDFPreview,
@@ -382,8 +387,8 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
       <box flexDirection="row" justifyContent="space-between" alignItems="center" width={`100%`}>
         <Button label="X" color="red" onClick={props.onClose} focused={props.closeFocused} />
       </box>
-      <box flexDirection="row" columnGap={2} flexGrow={1} minHeight={18} alignItems="stretch">
-        <box flexDirection="column" flexGrow={1} rowGap={0} width={`100%`}>
+      <box flexDirection="row" columnGap={2} flexGrow={1} alignItems="stretch">
+        <box flexDirection="column" width={`100%`}>
           <box justifyContent="center" alignItems="center" height={1}>
             <text fg="#4f565d" content={hasPreviousPage() ? `Page ${previousPage()}` : "End"} />
           </box>
@@ -494,7 +499,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
         </box>
       </box>
       <Show when={selectedFile()}>
-        <box flexDirection="column" alignItems="center" justifyContent="center" width={"100%"}>
+        <box flexDirection="column" alignItems="center" justifyContent="center" marginTop={1} width={"100%"}>
           <box flexDirection="row" alignItems="center" justifyContent="center" width={"100%"}>
             <box width={"25%"} alignItems="flex-end" marginLeft={14}>
               <Button
@@ -530,7 +535,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
               <Button
                 label="+ Add Page(s)"
                 color="green"
-                onClick={() => props.addPages(nextPage())}
+                onClick={() => props.addPages(nextPage() - 1)}
                 width={"50%"}
                 focused={props.addFocusedRight}
               />
@@ -603,7 +608,6 @@ export function OrganiseUI() {
   const nav = useKeyboardNav();
   const [isToolWindowOpen, setIsToolWindowOpen] = createSignal(false);
   const openToolWindow = () => setIsToolWindowOpen(true);
-  const closeToolWindow = () => setIsToolWindowOpen(false);
   const [focusedInput, setFocusedInput] = createSignal<string | null>(null);
   const [currentPage, setCurrentPage] = createSignal(1);
   const [movePageInput, setMovePageInput] = createSignal("");
@@ -612,6 +616,7 @@ export function OrganiseUI() {
 
   const previewFile = createMemo(() => workingFilePath() ?? fl.selectedFile());
   const totalPages = createMemo(() => (workingFilePath() ? workingPageCount() : fl.pageCount()));
+  const activePage = currentPage;
 
   createEffect(() => {
     nav.clearElements();
@@ -626,14 +631,14 @@ export function OrganiseUI() {
       nav.registerElement({
         id: "add-page-btn-left",
         type: "button",
-        onEnter: () => {},
+        onEnter: () => addPages(currentPage() - 1),
         canFocus: () => Boolean(fl.selectedFile()),
       });
 
       nav.registerElement({
         id: "add-page-btn-right",
         type: "button",
-        onEnter: () => {},
+        onEnter: () => addPages(currentPage()),
         canFocus: () => Boolean(fl.selectedFile()),
       });
 
@@ -779,9 +784,24 @@ export function OrganiseUI() {
 
   onCleanup(() => {
     nav.clearElements();
+    void cleanupWorkingDraft();
   });
 
-  const activePage = currentPage;
+  const cleanupWorkingDraft = async () => {
+    const draftPath = workingFilePath();
+
+    setWorkingFilePath(null);
+    setWorkingPageCount(0);
+
+    await deleteFileIfExists(draftPath);
+  };
+
+  const closeToolWindow = () => {
+    void cleanupWorkingDraft();
+    setCurrentPage(1);
+    setMovePageInput("");
+    setIsToolWindowOpen(false);
+  };
 
   const goPrev = () => {
     if (activePage() <= 1) {
@@ -851,6 +871,7 @@ export function OrganiseUI() {
       fl.setIsProcessing(false);
     }
   };
+
   const deletePage = async () => {
     const file = previewFile();
 
@@ -980,20 +1001,52 @@ export function OrganiseUI() {
     }
   };
 
-  const addPages = (index: number) => {
-    fl.setStatus({
-      msg: `Add Page at position ${index} is not wired yet`,
-      type: "info",
-    });
+  const addPages = async (index: number) => {
     const file = previewFile();
 
     if (!file || fl.isProcessing()) {
       return;
     }
 
-    if (totalPages() <= 1) {
-      fl.setStatus({ msg: "Cannot delete the last page", type: "error" });
-      return;
+    fl.setIsProcessing(true);
+    fl.setStatus({ msg: `Adding page at position ${index}...`, type: "info" });
+
+    try {
+      const result = await addPagesToPdf({
+        pageIndex: index,
+        inputPath: file,
+        originalInputPath: fl.selectedFile(),
+        workingFilePath: workingFilePath(),
+      });
+
+      if (!result.success) {
+        fl.setStatus({
+          msg: result.error || "Unable to add page",
+          type: "error",
+        });
+        return;
+      }
+
+      setWorkingFilePath(result.draftPath ?? null);
+
+      const nextTotalPages = result.totalPages ?? totalPages();
+      setWorkingPageCount(nextTotalPages);
+
+      const nextPage = result.currentPage ?? index;
+      setCurrentPage(nextPage);
+      setMovePageInput(String(nextPage));
+
+      fl.setStatus({
+        msg: `Added page at position ${index}. Total pages: ${nextTotalPages}`,
+        type: "success",
+      });
+    } catch (error) {
+      fl.setStatus({
+        msg: error instanceof Error ? error.message : "Unable to add page",
+        type: "error",
+      });
+    } finally {
+      fl.setIsProcessing(false);
     }
   };
 
@@ -1019,7 +1072,7 @@ export function OrganiseUI() {
           <text
             fg="#d8c7b8"
             attributes={TextAttributes.BOLD}
-            content="Reorder, Delete or Insert Pages in a PDF"
+            content="Reorder, Delete or Add pages in a PDF"
           />
           <Show when={!isToolWindowOpen()}>
             <text

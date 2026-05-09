@@ -1,11 +1,28 @@
 import { PDFDocument } from "pdf-lib";
 import { deletePagesFromDocument } from "./delete";
-import { getOutputPath, loadPdfDocument, savePdfDocument } from "../utils/utils";
+import {
+  getOutputPath,
+  handleFileExplorer,
+  loadPdfDocument,
+  savePdfDocument,
+} from "../utils/utils";
 
 interface OrganiseDraftInput {
   inputPath: string;
   originalInputPath?: string | null;
   workingFilePath?: string | null;
+}
+
+interface OrganiseAddPageInput extends OrganiseDraftInput {
+  pageIndex: number;
+}
+
+interface OrganiseAddPageOutput {
+  success: boolean;
+  draftPath?: string;
+  totalPages?: number;
+  currentPage?: number;
+  error?: string;
 }
 
 interface DeleteOrganisePageInput extends OrganiseDraftInput {
@@ -125,6 +142,63 @@ export async function moveOrganisePage(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unable to move page",
+    };
+  }
+}
+
+export async function addPagesToPdf(input: OrganiseAddPageInput): Promise<OrganiseAddPageOutput> {
+  const baseInput = input;
+
+  try {
+    const files = await handleFileExplorer(undefined, "pdf");
+
+    if (!files || files.length === 0) {
+      return {
+        success: false,
+        error: "No PDF files selected",
+      };
+    }
+
+    const pdfDoc = await loadPdfDocument(baseInput.workingFilePath ?? baseInput.inputPath);
+
+    const mergedPdfs = await PDFDocument.create();
+
+    for (const file of files) {
+      const newPdf = await loadPdfDocument(file);
+      const copiedPages = await mergedPdfs.copyPages(newPdf, newPdf.getPageIndices());
+
+      copiedPages.forEach((page) => {
+        mergedPdfs.addPage(page);
+      });
+    }
+
+    //now we gotta merge mergedPdfs into pdfDoc at the correct index (could be in middle, start or end)
+    const finalPdf = await PDFDocument.create();
+
+    const pdfDocPages = await finalPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+    const mergedPages = await finalPdf.copyPages(mergedPdfs, mergedPdfs.getPageIndices());
+
+    const beforePages = pdfDocPages.slice(0, baseInput.pageIndex);
+    const afterPages = pdfDocPages.slice(baseInput.pageIndex);
+
+    beforePages.forEach((page) => finalPdf.addPage(page));
+    mergedPages.forEach((page) => finalPdf.addPage(page));
+    afterPages.forEach((page) => finalPdf.addPage(page));
+
+    const draftPath = await resolveDraftPath(baseInput);
+
+    await savePdfDocument(finalPdf, draftPath);
+
+    return {
+      success: true,
+      draftPath: draftPath,
+      totalPages: finalPdf.getPageCount(),
+      currentPage: baseInput.pageIndex + 1,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unable to add page",
     };
   }
 }
