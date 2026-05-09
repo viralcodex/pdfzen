@@ -7,17 +7,18 @@
     "dev": "bun run --watch src/index.tsx",
     "setup": "bun run scripts/dev.ts setup",
     "install:global": "bun run scripts/dev.ts install",
-    "build": "bun run scripts/build.ts",
-    "build:release": "bun run scripts/build.ts release",
+    "build": "bun run lint && bun run format && bun run scripts/build.ts",
+    "build:release": "bun run lint && bun run format && bun run scripts/build.ts release",
     "test": "bun test",
     "lint": "oxlint .",
-    "format": "oxfmt --write ."
+    "format": "oxfmt --write .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@opentui/core": "^0.1.74",
-    "@opentui/solid": "^0.1.74",
-    "mupdf": "^1.27.0",
-    "pdf-lib": "^1.17.1",
+    "@opentui/core": "0.2.0",
+    "@opentui/solid": "0.2.0",
+    "mupdf": "1.27.0",
+    "pdf-lib": "1.17.1",
     "solid-js": "1.9.9"
   },
   "devDependencies": {

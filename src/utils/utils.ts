@@ -1,7 +1,7 @@
 import { PDFDocument } from "pdf-lib";
 import { join, basename } from "path";
 import { linuxScript, osaScript, OUTPUT_DIR, windowsScript } from "../constants/constants";
-import { mkdir, stat } from "fs/promises";
+import { mkdir, rm, stat } from "fs/promises";
 import type { MouseEvent } from "@opentui/core";
 
 const openedFiles = new Set<string>(); // to track opened files
@@ -178,10 +178,10 @@ export const validateImageFile = async (
 };
 
 export const handleFileExplorer = async (
-  event: MouseEvent,
+  event: MouseEvent | undefined,
   fileType: "pdf" | "image",
 ): Promise<string[]> => {
-  if (event.button !== 0) return []; // only left click
+  if (event && event.button !== 0) return [];
 
   const platform = process.platform;
   let cmd: string[];
@@ -250,12 +250,16 @@ export const getPageCount = async (filePath: string): Promise<number> => {
   }
 };
 
-export async function savePdfDocument(
-  pdfDoc: PDFDocument,
-  outputPath: string,
-): Promise<void> {
+export async function savePdfDocument(pdfDoc: PDFDocument, outputPath: string): Promise<void> {
   const modifiedPdfBytes = await pdfDoc.save();
   await Bun.write(outputPath, modifiedPdfBytes);
+}
+
+export async function deleteFileIfExists(filePath?: string | null): Promise<void> {
+  if (!filePath) {
+    return;
+  }
+  await rm(filePath, { force: true }); // force:true prevents error if file doesn't exist
 }
 
 export async function loadPdfDocument(inputPath: string): Promise<PDFDocument> {
