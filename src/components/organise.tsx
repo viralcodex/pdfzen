@@ -374,6 +374,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
     })();
   });
 
+  // Cleanup on unmount
   onCleanup(() => {
     renderer.off("capabilities", handleCapabilitiesChange);
     cancelPendingPreviewRender();
@@ -449,7 +450,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
             errorMessage={error() ?? "Unable to render preview."}
             emptyMessage="Select a PDF to organise."
             border={false}
-            backgroundColor="#221b18"
+            backgroundColor="#f5f5f5"
             minHeight={18}
             alignItems="center"
             justifyContent="center"
@@ -797,7 +798,6 @@ export function OrganiseUI() {
   };
 
   const closeToolWindow = () => {
-    void cleanupWorkingDraft();
     setCurrentPage(1);
     setMovePageInput("");
     setIsToolWindowOpen(false);

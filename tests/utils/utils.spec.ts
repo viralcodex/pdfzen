@@ -364,6 +364,31 @@ describe("utils", () => {
     }
   });
 
+  it("parses CRLF-delimited win32 file explorer output", async () => {
+    const restorePlatform = setPlatform("win32");
+    const calls: string[][] = [];
+
+    const restoreSpawn = setSpawn((cmd: string[]) => {
+      calls.push(cmd);
+      return {
+        exited: Promise.resolve(0),
+        stdout: textStream("C:\\tmp\\a.pdf\r\nC:\\tmp\\b.pdf\r\n"),
+      };
+    });
+
+    try {
+      const leftClick = mouseEvent(0);
+      expect(await handleFileExplorer(leftClick, "pdf")).toEqual([
+        "C:\\tmp\\a.pdf",
+        "C:\\tmp\\b.pdf",
+      ]);
+      expect(calls[0]?.[2]).toContain("[Environment]::NewLine");
+    } finally {
+      restoreSpawn();
+      restorePlatform();
+    }
+  });
+
   it("covers ensureOutputDir failure path", async () => {
     const originalWarn = console.warn;
     const warns: unknown[][] = [];

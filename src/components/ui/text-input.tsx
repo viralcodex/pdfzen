@@ -41,7 +41,7 @@ export function TextInput(props: TextInputProps) {
         }}
         backgroundColor="#1a1a1a"
         padding={1}
-        paddingBottom={2}
+        paddingBottom={1}
         width="100%"
       >
         <input

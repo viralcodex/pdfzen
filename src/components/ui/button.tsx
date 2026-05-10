@@ -1,4 +1,4 @@
-import { TextAttributes } from "@opentui/core";
+import { MouseEvent, TextAttributes } from "@opentui/core";
 import { createSignal } from "solid-js";
 import { EmptyBorderChars } from "../../constants/constants";
 
@@ -6,11 +6,15 @@ interface ButtonProps {
   label: string;
   color: string;
   disabled?: boolean;
-  onClick: () => void;
+  onClick: (e?: MouseEvent) => void;
   focused?: boolean;
   width?: number | "auto" | `${number}%`;
+  marginLeft?: number;
+  marginRight?: number;
   marginTop?: number;
   marginBottom?: number;
+  paddingRight?: number;
+  paddingLeft?: number;
   paddingTop?: number;
   paddingBottom?: number;
 }
@@ -61,14 +65,18 @@ export function Button(props: ButtonProps) {
           horizontal: isHighlighted() ? "▄" : "▂",
         }}
         height={1}
-        paddingLeft={2}
-        paddingRight={2}
+        marginLeft={props.marginLeft ?? 0}
+        marginRight={props.marginRight ?? 0}
+        marginTop={props.marginTop ?? 0}
+        marginBottom={props.marginBottom ?? 0}
+        paddingLeft={props.paddingLeft ?? 2}
+        paddingRight={props.paddingRight ?? 2}
         paddingTop={props.paddingTop ?? 1}
         paddingBottom={props.paddingBottom ?? 1}
         width="100%"
         justifyContent="center"
         alignItems="center"
-        onMouseDown={props.disabled ? undefined : props.onClick}
+        onMouseDown={props.disabled ? undefined : (e: MouseEvent) => props.onClick(e)}
         onMouseOver={() => setHovered(true)}
         onMouseOut={() => setHovered(false)}
       >
