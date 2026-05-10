@@ -44,6 +44,6 @@ set output to output & POSIX path of f & "\\n"
 end repeat
 return output`;
 
-export const windowsScript = `Add-Type -AssemblyName System.Windows.Forms; $ofd = New-Object System.Windows.Forms.OpenFileDialog; $ofd.Filter = "{{type}}"; $ofd.Multiselect = $true; if ($ofd.ShowDialog() -eq "OK") { $ofd.FileNames -join "\\n" }`;
+export const windowsScript = `Add-Type -AssemblyName System.Windows.Forms; $ofd = New-Object System.Windows.Forms.OpenFileDialog; $ofd.Filter = "{{type}}"; $ofd.Multiselect = $true; if ($ofd.ShowDialog() -eq "OK") { $ofd.FileNames -join [Environment]::NewLine }`;
 
 export const linuxScript = `zenity --file-selection --title="Select PDF files" --file-filter="{{type}}" --multiple --separator="\n"`;

@@ -209,7 +209,11 @@ export const handleFileExplorer = async (
     if (exitCode !== 0) return []; // user cancelled
 
     const output = await new Response(proc.stdout).text();
-    return output.trim().split("\n").filter(Boolean);
+    return output
+      .trim()
+      .split(/\r?\n/)
+      .map((filePath) => filePath.trim())
+      .filter(Boolean);
   } catch {
     return [];
   }
