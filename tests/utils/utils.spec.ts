@@ -90,6 +90,21 @@ describe("utils", () => {
     expect(unescapePath("/tmp/My\\ File.pdf")).toBe("/tmp/My File.pdf");
   });
 
+  it("preserves Windows path separators", () => {
+    const restorePlatform = setPlatform("win32");
+
+    try {
+      expect(unescapePath(String.raw`C:\Users\alice\Documents\My File.pdf`)).toBe(
+        String.raw`C:\Users\alice\Documents\My File.pdf`,
+      );
+      expect(unescapePath(String.raw`\\server\share\Docs\file.pdf`)).toBe(
+        String.raw`\\server\share\Docs\file.pdf`,
+      );
+    } finally {
+      restorePlatform();
+    }
+  });
+
   it("validates pdf and image files", async () => {
     const dir = await mkdtemp(join(tmpdir(), "tuidf-utils-"));
     tempDirs.push(dir);

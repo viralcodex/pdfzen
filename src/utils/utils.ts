@@ -243,7 +243,18 @@ export const closeFileTracking = (filePath: string) => {
   openedFiles.delete(filePath);
 };
 
-export const unescapePath = (path: string): string => path.replace(/\\(.)/g, "$1");
+const WINDOWS_PATH_PREFIX = /^(?:[a-zA-Z]:[\\/]|\\\\)/;
+
+export const unescapePath = (filePath: string): string => {
+  const trimmedPath = filePath.trim();
+
+  if (!trimmedPath) return "";
+  if (process.platform === "win32" || WINDOWS_PATH_PREFIX.test(trimmedPath)) {
+    return trimmedPath;
+  }
+
+  return trimmedPath.replace(/\\(?=[\s"'(){}[\]])/g, "");
+};
 
 export const getPageCount = async (filePath: string): Promise<number> => {
   try {
