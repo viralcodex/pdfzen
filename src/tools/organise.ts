@@ -6,6 +6,7 @@ import {
   loadPdfDocument,
   savePdfDocument,
 } from "../utils/utils";
+import { createSignal } from "solid-js";
 
 interface OrganiseDraftInput {
   inputPath: string;
@@ -146,11 +147,16 @@ export async function moveOrganisePage(
   }
 }
 
-export async function addPagesToPdf(input: OrganiseAddPageInput): Promise<OrganiseAddPageOutput> {
+export async function addPagesToPdf(
+  input: OrganiseAddPageInput,
+): Promise<OrganiseAddPageOutput | undefined> {
   const baseInput = input;
+  const [isPreviewOpen, setIsPreviewOpen] = createSignal(false);
 
   try {
-    const files = await handleFileExplorer(undefined, "pdf");
+    if (isPreviewOpen()) return;
+
+    const files = await handleFileExplorer(undefined, "pdf", setIsPreviewOpen);
 
     if (!files || files.length === 0) {
       return {

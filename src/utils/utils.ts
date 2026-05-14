@@ -3,6 +3,7 @@ import { join, basename } from "path";
 import { linuxScript, osaScript, OUTPUT_DIR, windowsScript } from "../constants/constants";
 import { mkdir, rm, stat } from "fs/promises";
 import type { MouseEvent } from "@opentui/core";
+import type { Setter } from "solid-js";
 
 const openedFiles = new Set<string>(); // to track opened files
 const outputCache = new Map<string, string>(); // inputPath+tool -> outputPath
@@ -180,6 +181,7 @@ export const validateImageFile = async (
 export const handleFileExplorer = async (
   event: MouseEvent | undefined,
   fileType: "pdf" | "image",
+  setIsPreviewOpen: Setter<boolean>,
 ): Promise<string[]> => {
   if (event && event.button !== 0) return [];
 
@@ -203,10 +205,13 @@ export const handleFileExplorer = async (
     cmd = ["zenity", ...script.split(" ").slice(1)];
   }
 
+  setIsPreviewOpen(true);
   try {
     const proc = Bun.spawn(cmd, { stderr: "ignore" });
     const exitCode = await proc.exited;
-    if (exitCode !== 0) return []; // user cancelled
+    if (exitCode !== 0) {
+      return []; // user cancelled
+    }
 
     const output = await new Response(proc.stdout).text();
     return output
@@ -216,6 +221,8 @@ export const handleFileExplorer = async (
       .filter(Boolean);
   } catch {
     return [];
+  } finally {
+    setIsPreviewOpen(false);
   }
 };
 
@@ -245,15 +252,6 @@ export const closeFileTracking = (filePath: string) => {
 
 export const unescapePath = (path: string): string => path.replace(/\\(.)/g, "$1");
 
-export const getPageCount = async (filePath: string): Promise<number> => {
-  try {
-    const { totalPages } = await loadPdfDocumentWithPageCount(filePath);
-    return totalPages;
-  } catch {
-    return 0;
-  }
-};
-
 export async function savePdfDocument(pdfDoc: PDFDocument, outputPath: string): Promise<void> {
   const modifiedPdfBytes = await pdfDoc.save();
   await Bun.write(outputPath, modifiedPdfBytes);
@@ -265,6 +263,15 @@ export async function deleteFileIfExists(filePath?: string | null): Promise<void
   }
   await rm(filePath, { force: true }); // force:true prevents error if file doesn't exist
 }
+
+export const getPageCount = async (filePath: string): Promise<number> => {
+  try {
+    const { totalPages } = await loadPdfDocumentWithPageCount(filePath);
+    return totalPages;
+  } catch {
+    return 0;
+  }
+};
 
 export async function loadPdfDocument(inputPath: string): Promise<PDFDocument> {
   const pdfBytes = await Bun.file(inputPath).arrayBuffer();

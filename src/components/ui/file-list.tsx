@@ -2,6 +2,7 @@ import { TextAttributes } from "@opentui/core";
 import { Index, Show, createResource, createSignal } from "solid-js";
 import type { Accessor } from "solid-js";
 import { EmptyBorderChars } from "../../constants/constants";
+import { useDoubleClick } from "../../hooks/useDoubleClick";
 import { getFormattedFileMetadata, handleFileExplorer, openFile } from "../../utils/utils";
 
 interface FileListProps {
@@ -17,11 +18,13 @@ interface FileListProps {
   showReorder?: boolean;
   focusedIndex?: () => number | null;
   focusedButton?: () => string | null;
+  onDoubleClick?: (index: number) => void;
 }
 
 export function FileList(props: FileListProps) {
   const fileCount = () => props.files().length;
-
+  const handleRowClick = useDoubleClick<number>();
+  const [isPreviewOpen, setIsPreviewOpen] = createSignal(false);
   return (
     <scrollbox
       border={["left"]}
@@ -37,7 +40,8 @@ export function FileList(props: FileListProps) {
       flexGrow={1}
       minHeight={0}
       onMouseDown={async (e) => {
-        const files = await handleFileExplorer(e, props.fileType);
+        if (isPreviewOpen()) return;
+        const files = await handleFileExplorer(e, props.fileType, setIsPreviewOpen);
         if (files.length > 0) {
           props.onFilesSelected?.(files);
         }
@@ -127,10 +131,16 @@ export function FileList(props: FileListProps) {
                   backgroundColor={
                     isRowHighlighted() ? "#203949" : isRowSelected() ? "#1a342e" : "#333333"
                   }
-                  onMouseDown={() => {
-                    props.onFocusIndex?.(index);
-                    props.onSelect(index);
-                  }}
+                  onMouseDown={() =>
+                    handleRowClick({
+                      target: index,
+                      onClick: (currentIndex) => {
+                        props.onFocusIndex?.(currentIndex);
+                        props.onSelect(currentIndex);
+                      },
+                      onDoubleClick: props.onDoubleClick,
+                    })
+                  }
                   onMouseOver={() => setRowHovered(true)}
                   onMouseOut={() => setRowHovered(false)}
                   columnGap={1}
