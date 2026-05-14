@@ -24,7 +24,7 @@ export function ToolsMenu(props: {
     return Math.max(18, Math.floor((rowWidth() - totalGap) / cols));
   };
 
-  const rows = () => chunkArray(toolsMenu, isCompact() ? 2 : 4);
+  const rows = () => chunkArray(toolsMenu, columns());
 
   // Register all tool menu items
   createEffect(() => {
