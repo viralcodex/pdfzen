@@ -13,8 +13,9 @@ export function ToolsMenu(props: {
   const nav = useKeyboardNav();
   const terminalDimensions = useTerminalDimensions();
   const [hoveredTool, setHoveredTool] = createSignal<string | null>(null);
-  const isCompact = () => terminalDimensions().width < 95;
-  const columns = () => (isCompact() ? 2 : 4);
+  const isCompact = () => terminalDimensions().width < 105;
+  const isVeryCompact = () => terminalDimensions().width < 54;
+  const columns = () => (isCompact() ? (isVeryCompact() ? 1 : 2) : 4);
   const gap = () => (isCompact() ? 2 : 2);
   const rowWidth = () => Math.max(0, terminalDimensions().width - 6);
   const buttonWidth = () => {
