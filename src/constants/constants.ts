@@ -31,6 +31,8 @@ export const EmptyBorderChars = {
   horizontal: "",
 };
 
+export const HIGHLIGHT_ACCENT_COLOR = "#dfe7ef";
+
 export const STATUS_COLORS: Record<StatusType, string> = {
   error: "red",
   success: "green",

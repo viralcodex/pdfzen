@@ -149,25 +149,6 @@ export function CompressUI() {
         focusedButton={() => nav.getFocusedId()}
       />
 
-      <Show when={fl.selectedFile()}>
-        <box
-          border={["left"]}
-          borderColor="#3498db"
-          borderStyle="heavy"
-          backgroundColor="#1a2f3a"
-          paddingLeft={1}
-          paddingTop={1}
-          paddingBottom={1}
-          marginTop={1}
-          flexShrink={0}
-        >
-          <box flexDirection="row" columnGap={1}>
-            <text fg="#ecf0f1" content={"Selected:"} />
-            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
-          </box>
-        </box>
-      </Show>
-
       <Show when={result()}>
         <box flexDirection="column" marginTop={1} paddingLeft={1} flexShrink={0}>
           <text attributes={TextAttributes.BOLD} fg="green" content={"Compression Result:"} />

@@ -1,6 +1,6 @@
 import { TextAttributes } from "@opentui/core";
 import { createSignal, type JSX } from "solid-js";
-import { EmptyBorderChars } from "../constants/constants";
+import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR } from "../constants/constants";
 
 interface ToolLayoutProps {
   toolName: string;
@@ -36,13 +36,13 @@ export function HeaderLayout(props: ToolLayoutProps) {
           onMouseOut={() => setBackHovered(false)}
           border={["bottom"]}
           backgroundColor={backHovered() ? "#4a4a4a" : "#3b3b3b"}
-          borderColor={backHovered() ? "#68ffc0" : "#ff6200"}
+          borderColor={backHovered() ? HIGHLIGHT_ACCENT_COLOR : "#ff6200"}
           customBorderChars={{
             ...EmptyBorderChars,
             horizontal: backHovered() ? "▄" : "▂",
           }}
         >
-          <text fg={backHovered() ? "#68ffc0" : "yellow"} content={"esc"} />
+          <text fg={backHovered() ? HIGHLIGHT_ACCENT_COLOR : "yellow"} content={"esc"} />
         </box>
         <box
           flexGrow={1}

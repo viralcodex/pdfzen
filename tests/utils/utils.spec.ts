@@ -5,6 +5,7 @@ import { join } from "path";
 import { stat } from "fs/promises";
 import { truncate } from "node:fs/promises";
 import { rename } from "node:fs/promises";
+import type { Setter } from "solid-js";
 import {
   clearOpenedFiles,
   closeFileTracking,
@@ -73,6 +74,9 @@ describe("utils", () => {
         controller.close();
       },
     });
+
+  const noopPreviewOpenSetter: Setter<boolean> = (value) =>
+    typeof value === "function" ? value(false) : value;
 
   it("chunks arrays by size", () => {
     expect(chunkArray([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
@@ -272,7 +276,7 @@ describe("utils", () => {
   it("handles file explorer platform branches and cancel/error paths", async () => {
     const rightClick = mouseEvent(2);
 
-    expect(await handleFileExplorer(rightClick, "pdf")).toEqual([]);
+    expect(await handleFileExplorer(rightClick, "pdf", noopPreviewOpenSetter)).toEqual([]);
   });
 
   it("handles file explorer success/cancel/error on darwin", async () => {
@@ -299,9 +303,12 @@ describe("utils", () => {
     try {
       const leftClick = mouseEvent(0);
 
-      expect(await handleFileExplorer(leftClick, "pdf")).toEqual(["/tmp/a.pdf", "/tmp/b.pdf"]);
-      expect(await handleFileExplorer(leftClick, "image")).toEqual([]);
-      expect(await handleFileExplorer(leftClick, "pdf")).toEqual([]);
+      expect(await handleFileExplorer(leftClick, "pdf", noopPreviewOpenSetter)).toEqual([
+        "/tmp/a.pdf",
+        "/tmp/b.pdf",
+      ]);
+      expect(await handleFileExplorer(leftClick, "image", noopPreviewOpenSetter)).toEqual([]);
+      expect(await handleFileExplorer(leftClick, "pdf", noopPreviewOpenSetter)).toEqual([]);
 
       expect(calls[0]?.[0]).toBe("osascript");
     } finally {
@@ -330,7 +337,7 @@ describe("utils", () => {
       await openFile("/tmp/linux.pdf");
       await openOutputFolder("/tmp");
       const leftClick = mouseEvent(0);
-      await handleFileExplorer(leftClick, "image");
+      await handleFileExplorer(leftClick, "image", noopPreviewOpenSetter);
     } finally {
       restoreLinux();
       restoreSpawn();
@@ -355,8 +362,8 @@ describe("utils", () => {
 
     try {
       const leftClick = mouseEvent(0);
-      expect(await handleFileExplorer(leftClick, "pdf")).toEqual([]);
-      expect(await handleFileExplorer(leftClick, "image")).toEqual([]);
+      expect(await handleFileExplorer(leftClick, "pdf", noopPreviewOpenSetter)).toEqual([]);
+      expect(await handleFileExplorer(leftClick, "image", noopPreviewOpenSetter)).toEqual([]);
       expect(calls.every((cmd) => cmd[0] === "powershell")).toBe(true);
     } finally {
       restoreSpawn();
@@ -378,7 +385,7 @@ describe("utils", () => {
 
     try {
       const leftClick = mouseEvent(0);
-      expect(await handleFileExplorer(leftClick, "pdf")).toEqual([
+      expect(await handleFileExplorer(leftClick, "pdf", noopPreviewOpenSetter)).toEqual([
         "C:\\tmp\\a.pdf",
         "C:\\tmp\\b.pdf",
       ]);

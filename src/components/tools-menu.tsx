@@ -1,5 +1,5 @@
 import { useTerminalDimensions } from "@opentui/solid";
-import { EmptyBorderChars, toolsMenu } from "../constants/constants";
+import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR, toolsMenu } from "../constants/constants";
 import { TextAttributes } from "@opentui/core";
 import { chunkArray } from "../utils/utils";
 import { createEffect, createSignal, onCleanup } from "solid-js";
@@ -70,7 +70,7 @@ export function ToolsMenu(props: {
                 width={buttonWidth()}
                 backgroundColor={"#2c3e50"}
                 border={["bottom"]}
-                borderColor={isHighlighted() ? "#68ffc0" : "#e74c3c"}
+                borderColor={isHighlighted() ? HIGHLIGHT_ACCENT_COLOR : "#e74c3c"}
                 borderStyle="heavy"
                 customBorderChars={{
                   ...EmptyBorderChars,
@@ -78,7 +78,9 @@ export function ToolsMenu(props: {
                 }}
               >
                 <text
-                  fg={isHighlighted() ? "#32d692" : isSelected() ? "#ffffff" : "#e2e8f0"}
+                  fg={
+                    isHighlighted() ? HIGHLIGHT_ACCENT_COLOR : isSelected() ? "#ffffff" : "#e2e8f0"
+                  }
                   attributes={isSelected() || isHighlighted() ? TextAttributes.BOLD : undefined}
                   content={String(tool.name)}
                 />

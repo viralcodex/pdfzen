@@ -1,4 +1,4 @@
-import { createSignal, Show, createEffect, onCleanup } from "solid-js";
+import { createSignal, createEffect, onCleanup } from "solid-js";
 import { protectPDF } from "../tools/protect";
 import { openFile, getOutputPath, openOutputFolder } from "../utils/utils";
 import { Button } from "./ui/button";
@@ -9,7 +9,6 @@ import { StatusBar } from "./ui/status-bar";
 import { TextInput } from "./ui/text-input";
 import { ToolContainer } from "./ui/tool-container";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
-import { TextAttributes } from "@opentui/core";
 import { useFileListContext } from "../provider/fileListProvider";
 
 export function ProtectUI() {
@@ -160,25 +159,6 @@ export function ProtectUI() {
         focusedButton={() => nav.getFocusedId()}
       />
 
-      <Show when={fl.selectedFile()}>
-        <box
-          border={["left"]}
-          borderColor="#3498db"
-          borderStyle="heavy"
-          backgroundColor="#1a2f3a"
-          paddingLeft={1}
-          paddingTop={1}
-          paddingBottom={1}
-          marginTop={1}
-          flexShrink={0}
-        >
-          <box flexDirection="row" columnGap={1}>
-            <text fg="#ecf0f1" content={"Selected:"} />
-            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
-          </box>
-        </box>
-      </Show>
-
       <box flexDirection="column" marginTop={1} flexShrink={0}>
         <TextInput
           label="User Password (required to open):"
@@ -199,10 +179,6 @@ export function ProtectUI() {
           }
           onFocus={() => setFocusedInput("input-owner-password")}
         />
-      </box>
-
-      <box marginTop={1} paddingLeft={1} flexShrink={0}>
-        <text fg="#95a5a6" content="Note: Requires qpdf to be installed" />
       </box>
 
       <ButtonRow>

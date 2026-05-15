@@ -2,7 +2,7 @@ import { KeyEvent, RGBA } from "@opentui/core";
 import { render, useKeyboard } from "@opentui/solid";
 import { ToolsMenu } from "./components/tools-menu";
 import { createSignal } from "solid-js";
-import { toolsMenu } from "./constants/constants";
+import { HIGHLIGHT_ACCENT_COLOR, toolsMenu } from "./constants/constants";
 import Hero from "./components/hero";
 import { MainUI } from "./components/main-ui";
 import { type FileListOptions } from "./model/models";
@@ -79,7 +79,7 @@ render(() => {
           alignItems="center"
           backgroundColor={RGBA.fromInts(50, 50, 50, 256)}
         >
-          <text fg="#68ffc0" content={"Press ESC again to go back to menu"} />
+          <text fg={HIGHLIGHT_ACCENT_COLOR} content={"Press ESC again to go back to menu"} />
         </box>
       )}
     </box>

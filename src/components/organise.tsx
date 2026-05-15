@@ -562,7 +562,6 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                 focused={props.movePageInputFocused}
                 onFocus={props.onMovePageFocus}
                 onInput={props.onMovePageInput}
-                marginBottom={1}
                 width={"100%"}
               />
             </box>
@@ -653,12 +652,14 @@ export function OrganiseUI() {
         id: "organise-prev-btn",
         type: "button",
         onEnter: goPrev,
+        canFocus: () => currentPage() > 1,
       });
 
       nav.registerElement({
         id: "organise-next-btn",
         type: "button",
         onEnter: goNext,
+        canFocus: () => currentPage() < totalPages(),
       });
 
       nav.registerElement({

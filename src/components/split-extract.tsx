@@ -12,7 +12,6 @@ import { TextInput } from "./ui/text-input";
 import { Toggle } from "./ui/toggle";
 import { ToggleRow } from "./ui/toggle-row";
 import { ToolContainer } from "./ui/tool-container";
-import { TextAttributes } from "@opentui/core";
 import { EmptyBorderChars } from "../constants/constants";
 import type { SplitMode, ExtractMode } from "../model";
 import { useFileListContext } from "../provider/fileListProvider";
@@ -304,39 +303,15 @@ export function SplitExtractUI() {
         }}
         focusedButton={() => nav.getFocusedId()}
       />
-
-      <Show when={fl.selectedFile()}>
-        <box
-          border={["left"]}
-          borderColor="#3498db"
-          borderStyle="heavy"
-          backgroundColor="#1a2f3a"
-          paddingLeft={1}
-          paddingTop={1}
-          paddingBottom={1}
-          marginTop={1}
-          flexShrink={0}
-        >
-          <box flexDirection="row" columnGap={1}>
-            <text fg="#ecf0f1" content={"Selected:"} />
-            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
-            <text fg="#95a5a6" content={`(${fl.pageCount()} pages)`} />
-          </box>
-        </box>
-      </Show>
-
       <box
         flexDirection={stackToolPanels() ? "column" : "row"}
-        columnGap={2}
         rowGap={1}
-        marginTop={1}
-        marginBottom={1}
-        alignItems="stretch"
+        columnGap={1}
         flexShrink={0}
+        marginTop={1}
       >
         <box
           flexDirection="column"
-          rowGap={1}
           flexShrink={0}
           flexGrow={1}
           width={stackToolPanels() ? "100%" : "50%"}
@@ -351,11 +326,9 @@ export function SplitExtractUI() {
           backgroundColor="#182127"
           paddingLeft={1}
           paddingRight={1}
-          paddingTop={1}
-          paddingBottom={1}
         >
           <Label text="Split" />
-          <text fg="#95a5a6" content="Break the PDF into multiple files." />
+          {/* <text fg="#95a5a6" content="Break the PDF into multiple files." paddingBottom={1}/> */}
           <ToggleRow>
             <Toggle
               label="Split At"
@@ -397,7 +370,7 @@ export function SplitExtractUI() {
             />
           </Show>
 
-          <box marginTop={1}>
+          <box marginBottom={1}>
             <Button
               label={fl.isProcessing() ? "Splitting..." : "Split"}
               color={canSplit() ? "cyan" : "gray"}
@@ -407,10 +380,8 @@ export function SplitExtractUI() {
             />
           </box>
         </box>
-
         <box
           flexDirection="column"
-          rowGap={1}
           flexShrink={0}
           flexGrow={1}
           width={stackToolPanels() ? "100%" : "50%"}
@@ -423,14 +394,11 @@ export function SplitExtractUI() {
           borderColor="#9b59b6"
           borderStyle="heavy"
           backgroundColor="#211c27"
-          marginRight={2}
           paddingLeft={1}
-          // paddingRight={1}
-          paddingTop={1}
-          paddingBottom={1}
+          paddingRight={1}
         >
           <Label text="Extract" />
-          <text fg="#b8a7c9" content="Copy selected pages into new files." />
+          {/* <text fg="#b8a7c9" content="Copy selected pages into new files." paddingBottom={1}/> */}
           <ToggleRow>
             <Toggle
               label="Range"
@@ -451,10 +419,10 @@ export function SplitExtractUI() {
           <Show when={extractMode() === "range"}>
             <box
               flexDirection={stackRangeInputs() ? "column" : "row"}
-              columnGap={stackRangeInputs() ? 0 : 2}
+              columnGap={stackRangeInputs() ? 0 : 1}
               rowGap={stackRangeInputs() ? 1 : 0}
-              marginTop={0}
               flexShrink={0}
+              width="100%"
             >
               <TextInput
                 label="From Page:"
@@ -467,6 +435,9 @@ export function SplitExtractUI() {
                 }
                 onFocus={() => setFocusedInput("extract-input-rangeStart")}
                 flexGrow={1}
+                width={stackRangeInputs() ? "100%" : "30%"}
+                marginTop={1}
+                marginBottom={0}
               />
               <TextInput
                 label="To Page:"
@@ -479,6 +450,9 @@ export function SplitExtractUI() {
                 }
                 onFocus={() => setFocusedInput("extract-input-rangeEnd")}
                 flexGrow={1}
+                width={stackRangeInputs() ? "100%" : "30%"}
+                marginTop={stackRangeInputs() ? 0 : 1}
+                marginBottom={1}
               />
             </box>
           </Show>
@@ -496,7 +470,7 @@ export function SplitExtractUI() {
             />
           </Show>
 
-          <box marginTop={1}>
+          <box marginBottom={1}>
             <Button
               label={fl.isProcessing() ? "Extracting..." : "Extract"}
               color={canExtract() ? "magenta" : "gray"}
