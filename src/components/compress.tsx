@@ -183,7 +183,7 @@ export function CompressUI() {
           focused={nav.isFocused("compress-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

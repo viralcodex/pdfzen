@@ -44,8 +44,11 @@ function buildEncryptOptions(opts: {
  */
 export async function protectPDF(input: ProtectPDFInput): Promise<ProtectPDFOutput> {
   try {
+    const userPassword = input.userPassword || undefined;
+    const ownerPassword = input.ownerPassword || userPassword;
+
     // Validate that at least one password is provided
-    if (!input.userPassword && !input.ownerPassword) {
+    if (!userPassword && !ownerPassword) {
       return {
         success: false,
         error: "At least one password (user or owner) must be provided",
@@ -53,7 +56,7 @@ export async function protectPDF(input: ProtectPDFInput): Promise<ProtectPDFOutp
     }
 
     // Reject passwords containing characters that break the options parser
-    for (const pw of [input.userPassword, input.ownerPassword]) {
+    for (const pw of [userPassword, ownerPassword]) {
       if (pw && /[,=]/.test(pw)) {
         return {
           success: false,
@@ -73,8 +76,8 @@ export async function protectPDF(input: ProtectPDFInput): Promise<ProtectPDFOutp
     }
 
     const opts = buildEncryptOptions({
-      userPassword: input.userPassword,
-      ownerPassword: input.ownerPassword,
+      userPassword,
+      ownerPassword,
       permissions: permBits,
     });
 

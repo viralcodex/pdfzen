@@ -197,7 +197,7 @@ export function ProtectUI() {
           focused={nav.isFocused("protect-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

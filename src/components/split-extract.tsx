@@ -327,7 +327,7 @@ export function SplitExtractUI() {
           paddingLeft={1}
           paddingRight={1}
         >
-          <Label text="Split" />
+          <Label text="Split" paddingBottom={1} />
           {/* <text fg="#95a5a6" content="Break the PDF into multiple files." paddingBottom={1}/> */}
           <ToggleRow>
             <Toggle
@@ -397,7 +397,7 @@ export function SplitExtractUI() {
           paddingLeft={1}
           paddingRight={1}
         >
-          <Label text="Extract" />
+          <Label text="Extract" paddingBottom={1} />
           {/* <text fg="#b8a7c9" content="Copy selected pages into new files." paddingBottom={1}/> */}
           <ToggleRow>
             <Toggle
@@ -491,7 +491,7 @@ export function SplitExtractUI() {
           focused={nav.isFocused("clear-all-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

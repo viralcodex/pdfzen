@@ -190,7 +190,7 @@ export function RotateUI() {
         focusedButton={() => nav.getFocusedId()}
       />
 
-      <Label text="Rotation" />
+      <Label text="Rotation" paddingBottom={1} />
       <ToggleRow>
         <Toggle
           label="90° →"
@@ -215,7 +215,7 @@ export function RotateUI() {
         />
       </ToggleRow>
 
-      <Label text="Apply to" />
+      <Label text="Apply to" paddingBottom={1} />
       <ToggleRow>
         <Toggle
           label="All Pages"
@@ -260,7 +260,7 @@ export function RotateUI() {
           focused={nav.isFocused("rotate-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

@@ -227,7 +227,7 @@ export function DeleteUI() {
           focused={nav.isFocused("delete-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

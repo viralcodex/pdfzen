@@ -188,7 +188,7 @@ export function DecryptUI() {
           focused={nav.isFocused("decrypt-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

@@ -114,7 +114,7 @@ export const openOutputFolder = async (folderPath?: string) => {
     const proc = Bun.spawn([cmd, ...args]);
     await proc.exited;
   } catch (error) {
-    console.error("Failed to open output folder:", targetPath, error);
+    console.error("Failed to Open Output Folder folder:", targetPath, error);
     throw error;
   }
 };

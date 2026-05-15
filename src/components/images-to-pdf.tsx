@@ -169,7 +169,7 @@ export function ImagesToPDFUI() {
         focusedButton={() => nav.getFocusedId()}
       />
 
-      <Label text="Page Size" />
+      <Label text="Page Size" paddingBottom={1} />
       <ToggleRow>
         <Toggle
           label="Fit to Image"
@@ -210,7 +210,7 @@ export function ImagesToPDFUI() {
           focused={nav.isFocused("convert-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

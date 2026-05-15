@@ -522,7 +522,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
               flexDirection="row"
               alignItems="center"
               justifyContent="center"
-              columnGap={1}
+              columnGap={2}
             >
               <PreviewButton
                 label="◀"
@@ -571,7 +571,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                 alignItems="center"
                 justifyContent="center"
                 width={"100%"}
-                columnGap={1}
+                columnGap={2}
                 marginTop={1}
               >
                 <box flexGrow={1} alignItems="stretch">
@@ -1164,7 +1164,7 @@ export function OrganiseUI() {
             focused={nav.isFocused("open-organise-btn")}
           />
           <Button
-            label="Open Output"
+            label="Open Output Folder"
             color="output"
             onClick={() =>
               openOutputFolder().catch((_) =>
