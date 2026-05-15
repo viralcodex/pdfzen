@@ -9,7 +9,6 @@ import { StatusBar } from "./ui/status-bar";
 import { TextInput } from "./ui/text-input";
 import { ToolContainer } from "./ui/tool-container";
 import { useKeyboardNav } from "../hooks/useKeyboardNav";
-import { TextAttributes } from "@opentui/core";
 import { useFileListContext } from "../provider/fileListProvider";
 
 export function DecryptUI() {
@@ -158,25 +157,6 @@ export function DecryptUI() {
         focusedButton={() => nav.getFocusedId()}
       />
 
-      <Show when={fl.selectedFile()}>
-        <box
-          border={["left"]}
-          borderColor="#3498db"
-          borderStyle="heavy"
-          backgroundColor="#1a2f3a"
-          paddingLeft={1}
-          paddingTop={1}
-          paddingBottom={1}
-          marginTop={1}
-          flexShrink={0}
-        >
-          <box flexDirection="row" columnGap={1}>
-            <text fg="#ecf0f1" content={"Selected:"} />
-            <text fg="#3498db" attributes={TextAttributes.BOLD} content={fl.selectedFile() ?? ""} />
-          </box>
-        </box>
-      </Show>
-
       <box flexDirection="column" marginTop={1} flexShrink={0}>
         <TextInput
           label="PDF Password:"
@@ -208,7 +188,7 @@ export function DecryptUI() {
           focused={nav.isFocused("decrypt-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

@@ -1,5 +1,5 @@
 import { TextAttributes } from "@opentui/core";
-import { EmptyBorderChars } from "../../constants/constants";
+import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR } from "../../constants/constants";
 import type { PreviewButtonProps } from "../../model/models";
 
 export function PreviewButton(props: PreviewButtonProps) {
@@ -12,7 +12,9 @@ export function PreviewButton(props: PreviewButtonProps) {
         ...EmptyBorderChars,
         horizontal: isHighlighted() ? "▄" : "▂",
       }}
-      borderColor={props.disabled ? "#3d464c" : isHighlighted() ? "#68ffc0" : "#3498db"}
+      borderColor={
+        props.disabled ? "#3d464c" : isHighlighted() ? HIGHLIGHT_ACCENT_COLOR : "#3498db"
+      }
       backgroundColor={props.disabled ? "#1a1f23" : isHighlighted() ? "#183340" : "#14242e"}
       paddingLeft={1}
       paddingRight={1}
@@ -25,7 +27,13 @@ export function PreviewButton(props: PreviewButtonProps) {
       }}
     >
       <text
-        fg={props.disabled ? "#59636a" : isHighlighted() ? "#9af7d3" : "#68ffc0"}
+        fg={
+          props.disabled
+            ? "#59636a"
+            : isHighlighted()
+              ? HIGHLIGHT_ACCENT_COLOR
+              : HIGHLIGHT_ACCENT_COLOR
+        }
         attributes={props.disabled ? undefined : TextAttributes.BOLD}
         content={props.label}
       />

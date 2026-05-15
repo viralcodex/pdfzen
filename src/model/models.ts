@@ -8,6 +8,7 @@ export interface FocusableElement {
   type: "button" | "input" | "list-item" | "toggle" | "tool";
   onEnter?: () => void;
   canFocus?: () => boolean;
+  onMouseDown?: () => void;
 }
 
 export interface Status {

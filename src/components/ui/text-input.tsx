@@ -1,6 +1,6 @@
 import { TextAttributes } from "@opentui/core";
 import type { Accessor, Setter } from "solid-js";
-import { EmptyBorderChars } from "../../constants/constants";
+import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR } from "../../constants/constants";
 
 interface TextInputProps {
   label: string;
@@ -17,7 +17,7 @@ interface TextInputProps {
 }
 
 export function TextInput(props: TextInputProps) {
-  const borderColor = () => (props.focused ? "#68ffc0" : "#34495e");
+  const borderColor = () => (props.focused ? HIGHLIGHT_ACCENT_COLOR : "#34495e");
 
   return (
     <box
@@ -29,7 +29,7 @@ export function TextInput(props: TextInputProps) {
       flexGrow={props.flexGrow}
       width={props.width ?? "100%"}
     >
-      <text fg="#ecf0f1" attributes={TextAttributes.BOLD} content={props.label} />
+      <text fg="#ecf0f1" attributes={TextAttributes.BOLD} content={props.label} paddingBottom={1} />
       <box
         border={["left"]}
         borderStyle="heavy"

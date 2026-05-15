@@ -231,13 +231,13 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
   });
 
   return (
-    <box flexDirection="column" flexGrow={1} minHeight={0} paddingTop={2}>
+    <box flexDirection="column" flexGrow={1} minHeight={0} paddingTop={2} paddingRight={1}>
       <box
         flexDirection="row"
         justifyContent="space-between"
         alignItems="center"
         flexShrink={0}
-        paddingRight={1}
+        marginRight={1}
       >
         <text fg="#d8c7b8" attributes={TextAttributes.BOLD} content="Preview" />
         <Button color="red" label="X" onClick={props.onClose} />
@@ -262,8 +262,7 @@ export function PDFPreviewPane(props: { onOpen: () => void; onClose: () => void 
           alignItems="center"
           justifyContent="center"
           columnGap={1}
-          paddingTop={1}
-          paddingBottom={1}
+          paddingY={1}
         >
           <PreviewButton
             label="◀"

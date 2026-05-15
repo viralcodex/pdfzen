@@ -119,6 +119,40 @@ describe("protect tool", () => {
     }
   });
 
+  it("defaults a missing owner password to the user password", async () => {
+    const { protectPDF } = await import("../../src/tools/protect");
+    tempDir = await createTempDir("tuidf-protect-owner-fallback-");
+
+    const input = join(tempDir, "input.pdf");
+    const output = join(tempDir, "protected.pdf");
+    let saveOptions = "";
+
+    await createPdf(input, 1);
+
+    const result = await withMockedOpenDocument(
+      () => ({
+        asPDF: () => ({
+          saveToBuffer: (options: string) => {
+            saveOptions = options;
+            return {
+              asUint8Array: () => new Uint8Array([37, 80, 68, 70]),
+            };
+          },
+        }),
+      }),
+      () =>
+        protectPDF({
+          inputPath: input,
+          outputPath: output,
+          userPassword: "reader",
+        }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(saveOptions).toContain("user-password=reader");
+    expect(saveOptions).toContain("owner-password=reader");
+  });
+
   it("validates password requirements", async () => {
     const { protectPDF } = await import("../../src/tools/protect");
 

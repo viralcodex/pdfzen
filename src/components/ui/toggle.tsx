@@ -1,6 +1,6 @@
 import { TextAttributes } from "@opentui/core";
 import { createSignal } from "solid-js";
-import { EmptyBorderChars } from "../../constants/constants";
+import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR } from "../../constants/constants";
 
 interface ToggleProps<T> {
   label: string;
@@ -19,7 +19,7 @@ export function Toggle<T>(props: ToggleProps<T>) {
     <box
       border={["bottom"]}
       borderStyle={isSelected() ? "heavy" : "single"}
-      borderColor={isHighlighted() ? "#68ffc0" : isSelected() ? "#3498db" : "#34495e"}
+      borderColor={isHighlighted() ? HIGHLIGHT_ACCENT_COLOR : isSelected() ? "#3498db" : "#34495e"}
       backgroundColor={isSelected() ? "#1a2f3a" : "#1a1a1a"}
       customBorderChars={{
         ...EmptyBorderChars,
@@ -35,7 +35,7 @@ export function Toggle<T>(props: ToggleProps<T>) {
       onMouseOut={() => setHovered(false)}
     >
       <text
-        fg={isHighlighted() ? "#68ffc0" : isSelected() ? "#3498db" : "#7f8c8d"}
+        fg={isHighlighted() ? HIGHLIGHT_ACCENT_COLOR : isSelected() ? "#3498db" : "#7f8c8d"}
         attributes={isSelected() || isHighlighted() ? TextAttributes.BOLD : undefined}
         content={props.label}
       />

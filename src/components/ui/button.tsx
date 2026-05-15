@@ -1,6 +1,6 @@
 import { MouseEvent, TextAttributes } from "@opentui/core";
 import { createSignal } from "solid-js";
-import { EmptyBorderChars } from "../../constants/constants";
+import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR } from "../../constants/constants";
 
 interface ButtonProps {
   label: string;
@@ -31,7 +31,7 @@ export function Button(props: ButtonProps) {
       case "cyan":
         return { bg: "#1a2f3a", border: "#34aeff" };
       case "output":
-        return { bg: "#14353d", border: "#68ffc0" };
+        return { bg: "#14353d", border: HIGHLIGHT_ACCENT_COLOR };
       case "yellow":
         return { bg: "#3a321a", border: "#f39c12" };
       case "magenta":
@@ -58,7 +58,7 @@ export function Button(props: ButtonProps) {
       <box
         border={["bottom"]}
         borderStyle="heavy"
-        borderColor={isHighlighted() ? "#68ffc0" : getColor().border}
+        borderColor={isHighlighted() ? HIGHLIGHT_ACCENT_COLOR : getColor().border}
         backgroundColor={getColor().bg}
         customBorderChars={{
           ...EmptyBorderChars,

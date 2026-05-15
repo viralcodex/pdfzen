@@ -54,7 +54,7 @@ export function MainUI(props: MainUIProps) {
         <box flexGrow={3}>
           <Dynamic component={toolComponents[props.selectedTool]} />
         </box>
-        <Show when={props.selectedTool !== "organise"}>
+        <Show when={props.selectedTool !== "organise" && props.selectedTool !== "decrypt"}>
           <box flexGrow={2} width={isPreviewOpen() && fl.fileCount() > 0 ? "30%" : 6}>
             <Show
               when={isPreviewOpen() && fl.fileCount() > 0}

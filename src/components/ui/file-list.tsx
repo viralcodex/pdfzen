@@ -1,7 +1,8 @@
 import { TextAttributes } from "@opentui/core";
 import { Index, Show, createResource, createSignal } from "solid-js";
 import type { Accessor } from "solid-js";
-import { EmptyBorderChars } from "../../constants/constants";
+import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR } from "../../constants/constants";
+import { useDoubleClick } from "../../hooks/useDoubleClick";
 import { getFormattedFileMetadata, handleFileExplorer, openFile } from "../../utils/utils";
 
 interface FileListProps {
@@ -17,11 +18,13 @@ interface FileListProps {
   showReorder?: boolean;
   focusedIndex?: () => number | null;
   focusedButton?: () => string | null;
+  onDoubleClick?: (index: number) => void;
 }
 
 export function FileList(props: FileListProps) {
   const fileCount = () => props.files().length;
-
+  const handleRowClick = useDoubleClick<number>();
+  const [isPreviewOpen, setIsPreviewOpen] = createSignal(false);
   return (
     <scrollbox
       border={["left"]}
@@ -37,7 +40,8 @@ export function FileList(props: FileListProps) {
       flexGrow={1}
       minHeight={0}
       onMouseDown={async (e) => {
-        const files = await handleFileExplorer(e, props.fileType);
+        if (isPreviewOpen()) return;
+        const files = await handleFileExplorer(e, props.fileType, setIsPreviewOpen);
         if (files.length > 0) {
           props.onFilesSelected?.(files);
         }
@@ -127,17 +131,27 @@ export function FileList(props: FileListProps) {
                   backgroundColor={
                     isRowHighlighted() ? "#203949" : isRowSelected() ? "#1a342e" : "#333333"
                   }
-                  onMouseDown={() => {
-                    props.onFocusIndex?.(index);
-                    props.onSelect(index);
-                  }}
+                  onMouseDown={() =>
+                    handleRowClick({
+                      target: index,
+                      onClick: (currentIndex) => {
+                        props.onFocusIndex?.(currentIndex);
+                        props.onSelect(currentIndex);
+                      },
+                      onDoubleClick: props.onDoubleClick,
+                    })
+                  }
                   onMouseOver={() => setRowHovered(true)}
                   onMouseOut={() => setRowHovered(false)}
                   columnGap={1}
                   width="100%"
                   border={["left"]}
                   borderColor={
-                    isRowHighlighted() ? "#8fd3ff" : isRowSelected() ? "#68ffc0" : "#4b5563"
+                    isRowHighlighted()
+                      ? "#8fd3ff"
+                      : isRowSelected()
+                        ? HIGHLIGHT_ACCENT_COLOR
+                        : "#4b5563"
                   }
                   customBorderChars={{
                     ...EmptyBorderChars,
@@ -145,7 +159,13 @@ export function FileList(props: FileListProps) {
                   }}
                 >
                   <text
-                    fg={isRowHighlighted() ? "#8fd3ff" : isSelected() ? "#68ffc0" : "yellow"}
+                    fg={
+                      isRowHighlighted()
+                        ? "#8fd3ff"
+                        : isSelected()
+                          ? HIGHLIGHT_ACCENT_COLOR
+                          : "yellow"
+                    }
                     minWidth={3}
                     content={`${index + 1}.`}
                   />
@@ -200,7 +220,11 @@ export function FileList(props: FileListProps) {
                       <box
                         border={["bottom"]}
                         borderColor={
-                          isUpHighlighted() ? "#68ffc0" : canMoveUp() ? "#3498db" : "#34495e"
+                          isUpHighlighted()
+                            ? HIGHLIGHT_ACCENT_COLOR
+                            : canMoveUp()
+                              ? "#3498db"
+                              : "#34495e"
                         }
                         backgroundColor={isUpHighlighted() ? "#1a4a3a" : "#2c3e50"}
                         customBorderChars={{
@@ -223,7 +247,13 @@ export function FileList(props: FileListProps) {
                         alignItems="center"
                       >
                         <text
-                          fg={isUpHighlighted() ? "#68ffc0" : canMoveUp() ? "#3498db" : "#7f8c8d"}
+                          fg={
+                            isUpHighlighted()
+                              ? HIGHLIGHT_ACCENT_COLOR
+                              : canMoveUp()
+                                ? "#3498db"
+                                : "#7f8c8d"
+                          }
                           attributes={isUpHighlighted() ? TextAttributes.BOLD : undefined}
                           content={"↑"}
                         />
@@ -231,7 +261,11 @@ export function FileList(props: FileListProps) {
                       <box
                         border={["bottom"]}
                         borderColor={
-                          isDownHighlighted() ? "#68ffc0" : canMoveDown() ? "#3498db" : "#34495e"
+                          isDownHighlighted()
+                            ? HIGHLIGHT_ACCENT_COLOR
+                            : canMoveDown()
+                              ? "#3498db"
+                              : "#34495e"
                         }
                         backgroundColor={isDownHighlighted() ? "#1a4a3a" : "#2c3e50"}
                         customBorderChars={{
@@ -255,7 +289,11 @@ export function FileList(props: FileListProps) {
                       >
                         <text
                           fg={
-                            isDownHighlighted() ? "#68ffc0" : canMoveDown() ? "#3498db" : "#7f8c8d"
+                            isDownHighlighted()
+                              ? HIGHLIGHT_ACCENT_COLOR
+                              : canMoveDown()
+                                ? "#3498db"
+                                : "#7f8c8d"
                           }
                           attributes={isDownHighlighted() ? TextAttributes.BOLD : undefined}
                           content={"↓"}

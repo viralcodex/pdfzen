@@ -5,6 +5,7 @@ import type { StatusType } from "../model";
 export const OUTPUT_DIR = path.join(homedir(), "Documents", "TuiDF");
 
 export const toolsMenu = [
+  { name: "Organise PDF", command: "organise" },
   { name: "Merge PDFs", command: "merge" },
   { name: "Split/Extract PDF", command: "splitExtract" },
   { name: "Compress PDF", command: "compress" },
@@ -14,7 +15,6 @@ export const toolsMenu = [
   { name: "Images to PDF", command: "imagesToPDF" },
   { name: "Encrypt PDF", command: "protect" },
   { name: "Decrypt PDF", command: "decrypt" },
-  { name: "Organise PDF", command: "organise" },
 ];
 
 export const EmptyBorderChars = {
@@ -30,6 +30,8 @@ export const EmptyBorderChars = {
   rightT: "",
   horizontal: "",
 };
+
+export const HIGHLIGHT_ACCENT_COLOR = "#dfe7ef";
 
 export const STATUS_COLORS: Record<StatusType, string> = {
   error: "red",

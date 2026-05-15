@@ -157,7 +157,7 @@ export function MergeUI() {
           focused={nav.isFocused("merge-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>

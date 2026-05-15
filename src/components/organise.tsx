@@ -500,7 +500,13 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
         </box>
       </box>
       <Show when={selectedFile()}>
-        <box flexDirection="column" alignItems="center" justifyContent="center" marginTop={1} width={"100%"}>
+        <box
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          marginTop={1}
+          width={"100%"}
+        >
           <box flexDirection="row" alignItems="center" justifyContent="center" width={"100%"}>
             <box width={"25%"} alignItems="flex-end" marginLeft={14}>
               <Button
@@ -516,7 +522,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
               flexDirection="row"
               alignItems="center"
               justifyContent="center"
-              columnGap={1}
+              columnGap={2}
             >
               <PreviewButton
                 label="◀"
@@ -556,7 +562,6 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                 focused={props.movePageInputFocused}
                 onFocus={props.onMovePageFocus}
                 onInput={props.onMovePageInput}
-                marginBottom={1}
                 width={"100%"}
               />
             </box>
@@ -566,7 +571,7 @@ function OrganisePDFToolWindow(props: OrganisePDFToolWindowProps) {
                 alignItems="center"
                 justifyContent="center"
                 width={"100%"}
-                columnGap={1}
+                columnGap={2}
                 marginTop={1}
               >
                 <box flexGrow={1} alignItems="stretch">
@@ -647,12 +652,14 @@ export function OrganiseUI() {
         id: "organise-prev-btn",
         type: "button",
         onEnter: goPrev,
+        canFocus: () => currentPage() > 1,
       });
 
       nav.registerElement({
         id: "organise-next-btn",
         type: "button",
         onEnter: goNext,
+        canFocus: () => currentPage() < totalPages(),
       });
 
       nav.registerElement({
@@ -691,7 +698,10 @@ export function OrganiseUI() {
       nav.registerElement({
         id: `file-${index}`,
         type: "list-item",
-        onEnter: () => fl.selectFile(index),
+        onEnter: () => {
+          fl.selectFile(index);
+          openToolWindow();
+        },
       });
 
       nav.registerElement({
@@ -1019,6 +1029,8 @@ export function OrganiseUI() {
         workingFilePath: workingFilePath(),
       });
 
+      if (!result) return;
+
       if (!result.success) {
         fl.setStatus({
           msg: result.error || "Unable to add page",
@@ -1092,6 +1104,10 @@ export function OrganiseUI() {
           fileType="pdf"
           selectedIndex={fl.selectedIndex}
           onSelect={fl.selectFile}
+          onDoubleClick={async (index) => {
+            await fl.selectFile(index);
+            openToolWindow();
+          }}
           onFocusIndex={(index) => nav.focusById(`file-${index}`)}
           onRemove={fl.removeFile}
           onMove={fl.moveFile}
@@ -1148,7 +1164,7 @@ export function OrganiseUI() {
             focused={nav.isFocused("open-organise-btn")}
           />
           <Button
-            label="Open Output"
+            label="Open Output Folder"
             color="output"
             onClick={() =>
               openOutputFolder().catch((_) =>

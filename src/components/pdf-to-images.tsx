@@ -188,7 +188,7 @@ export function PDFToImagesUI() {
         </box>
       </Show>
 
-      <Label text="Format" />
+      <Label text="Format" paddingBottom={1} />
       <ToggleRow>
         <Toggle
           label="PNG"
@@ -206,7 +206,7 @@ export function PDFToImagesUI() {
         />
       </ToggleRow>
 
-      <Label text="Quality (DPI)" />
+      <Label text="Quality (DPI)" paddingBottom={1} />
       <ToggleRow>
         <Toggle
           label="72 (Low)"
@@ -247,7 +247,7 @@ export function PDFToImagesUI() {
           focused={nav.isFocused("convert-btn")}
         />
         <Button
-          label="Open Output"
+          label="Open Output Folder"
           color="output"
           onClick={() =>
             openOutputFolder().catch((_) =>
