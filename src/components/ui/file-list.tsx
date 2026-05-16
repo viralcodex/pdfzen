@@ -4,8 +4,10 @@ import type { Accessor } from "solid-js";
 import { EmptyBorderChars, HIGHLIGHT_ACCENT_COLOR } from "../../constants/constants";
 import { useDoubleClick } from "../../hooks/useDoubleClick";
 import { getFormattedFileMetadata, handleFileExplorer, openFile } from "../../utils/utils";
+import { Label } from "./label";
 
 interface FileListProps {
+  header: string;
   files: Accessor<string[]>;
   fileType: "pdf" | "image";
   selectedIndex: Accessor<number | null>;
@@ -26,47 +28,49 @@ export function FileList(props: FileListProps) {
   const handleRowClick = useDoubleClick<number>();
   const [isPreviewOpen, setIsPreviewOpen] = createSignal(false);
   return (
-    <scrollbox
-      border={["left"]}
-      borderStyle="heavy"
-      borderColor="#34495e"
-      customBorderChars={{
-        ...EmptyBorderChars,
-        vertical: "▌",
-        bottomLeft: "╹",
-      }}
-      backgroundColor="#1a1a1a"
-      width="100%"
-      flexGrow={1}
-      minHeight={0}
-      onMouseDown={async (e) => {
-        if (isPreviewOpen()) return;
-        const files = await handleFileExplorer(e, props.fileType, setIsPreviewOpen);
-        if (files.length > 0) {
-          props.onFilesSelected?.(files);
-        }
-      }}
-    >
-      <Show
-        when={fileCount() > 0}
-        fallback={
-          <box
-            flexGrow={1}
-            alignItems="center"
-            justifyContent="center"
-            paddingTop={1}
-            paddingBottom={1}
-          >
-            <text
-              fg="#7f8c8d"
-              content={props.emptyText || "No files added yet. Click or drag files here to add."}
-            />
-          </box>
-        }
+    <box flexDirection="column" width="100%" flexGrow={1} minHeight={0}>
+      <Label text={props.header} count={fileCount()} />
+      <scrollbox
+        border={["left"]}
+        borderStyle="heavy"
+        borderColor="#34495e"
+        customBorderChars={{
+          ...EmptyBorderChars,
+          vertical: "▌",
+          bottomLeft: "╹",
+        }}
+        backgroundColor="#1a1a1a"
+        width="100%"
+        flexGrow={1}
+        minHeight={0}
+        onMouseDown={async (e) => {
+          if (isPreviewOpen()) return;
+          const files = await handleFileExplorer(e, props.fileType, setIsPreviewOpen);
+          if (files.length > 0) {
+            props.onFilesSelected?.(files);
+          }
+        }}
       >
-        <box flexDirection="column" width="100%" onMouseDown={(e) => e.stopPropagation()}>
-          <Index each={props.files()}>
-            {(file, index) => {
+        <Show
+          when={fileCount() > 0}
+          fallback={
+            <box
+              flexGrow={1}
+              alignItems="center"
+              justifyContent="center"
+              paddingTop={1}
+              paddingBottom={1}
+            >
+              <text
+                fg="#7f8c8d"
+                content={props.emptyText || "No files added yet. Click or drag files here to add."}
+              />
+            </box>
+          }
+        >
+          <box flexDirection="column" width="100%" onMouseDown={(e) => e.stopPropagation()}>
+            <Index each={props.files()}>
+              {(file, index) => {
               const isSelected = () => props.selectedIndex() === index;
               const isFocused = () => props.focusedIndex?.() === index;
               const [metadata] = createResource(
@@ -122,42 +126,42 @@ export function FileList(props: FileListProps) {
               const isRemoveHighlighted = () =>
                 props.focusedButton?.() === `file-${index}-remove` || removeHovered();
 
-              return (
-                <box
-                  flexDirection="row"
-                  alignItems="center"
-                  padding={1}
-                  marginBottom={1}
-                  backgroundColor={
-                    isRowHighlighted() ? "#203949" : isRowSelected() ? "#1a342e" : "#333333"
-                  }
-                  onMouseDown={() =>
-                    handleRowClick({
-                      target: index,
-                      onClick: (currentIndex) => {
-                        props.onFocusIndex?.(currentIndex);
-                        props.onSelect(currentIndex);
-                      },
-                      onDoubleClick: props.onDoubleClick,
-                    })
-                  }
-                  onMouseOver={() => setRowHovered(true)}
-                  onMouseOut={() => setRowHovered(false)}
-                  columnGap={1}
-                  width="100%"
-                  border={["left"]}
-                  borderColor={
-                    isRowHighlighted()
-                      ? "#8fd3ff"
-                      : isRowSelected()
-                        ? HIGHLIGHT_ACCENT_COLOR
-                        : "#4b5563"
-                  }
-                  customBorderChars={{
-                    ...EmptyBorderChars,
-                    vertical: isRowHighlighted() ? "▍" : isRowSelected() ? "▍" : "┃",
-                  }}
-                >
+                return (
+                  <box
+                    flexDirection="row"
+                    alignItems="center"
+                    padding={1}
+                    marginBottom={1}
+                    backgroundColor={
+                      isRowHighlighted() ? "#203949" : isRowSelected() ? "#1a342e" : "#333333"
+                    }
+                    onMouseDown={() =>
+                      handleRowClick({
+                        target: index,
+                        onClick: (currentIndex) => {
+                          props.onFocusIndex?.(currentIndex);
+                          props.onSelect(currentIndex);
+                        },
+                        onDoubleClick: props.onDoubleClick,
+                      })
+                    }
+                    onMouseOver={() => setRowHovered(true)}
+                    onMouseOut={() => setRowHovered(false)}
+                    columnGap={1}
+                    width="100%"
+                    border={["left"]}
+                    borderColor={
+                      isRowHighlighted()
+                        ? "#8fd3ff"
+                        : isRowSelected()
+                          ? HIGHLIGHT_ACCENT_COLOR
+                          : "#4b5563"
+                    }
+                    customBorderChars={{
+                      ...EmptyBorderChars,
+                      vertical: isRowHighlighted() ? "▍" : isRowSelected() ? "▍" : "┃",
+                    }}
+                  >
                   <text
                     fg={
                       isRowHighlighted()
@@ -330,12 +334,13 @@ export function FileList(props: FileListProps) {
                       />
                     </box>
                   </box>
-                </box>
-              );
-            }}
-          </Index>
-        </box>
-      </Show>
-    </scrollbox>
+                  </box>
+                );
+              }}
+            </Index>
+          </box>
+        </Show>
+      </scrollbox>
+    </box>
   );
 }

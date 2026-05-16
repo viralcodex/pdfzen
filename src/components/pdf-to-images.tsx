@@ -146,8 +146,8 @@ export function PDFToImagesUI() {
 
   return (
     <ToolContainer>
-      <Label text="Files" count={fl.fileCount()} />
       <FileList
+        header="Files"
         files={fl.files}
         fileType="pdf"
         selectedIndex={fl.selectedIndex}
